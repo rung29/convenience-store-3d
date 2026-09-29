@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>橘子便利商店 3D (Gamania Mart 3D) - 經典模擬經營</title>
+    <meta name="description" content="致敬遊戲橘子經典《便利商店》！純滑鼠微縮模型風格 3D 模擬經營遊戲：進貨、定價、一鍵補貨、行銷宣傳、抓小偷與當日結算。" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <!-- 3D 微縮場景畫布容器 -->
+    <div id="canvas-container"></div>
+
+    <!-- 頂部即時營運 HUD (參考圖可愛圓角卡片風格) -->
+    <header class="top-hud-container">
+      <div class="top-left-group">
+        <!-- 店長檔案卡 -->
+        <div class="shop-profile-card">
+          <div class="shop-avatar">🍊</div>
+          <div class="shop-name-block">
+            <span class="shop-name">橘子超商</span>
+            <span class="shop-level">GAMANIA MART / Lv.1</span>
+          </div>
+        </div>
+
+        <!-- 我的金幣卡片 -->
+        <div class="coins-card">
+          <div class="coin-icon">💰</div>
+          <div class="coin-info">
+            <span class="coin-label">我的金幣</span>
+            <span class="coin-amount" id="hud-money">2,500</span>
+          </div>
+        </div>
+
+        <!-- 累計營收與客人 -->
+        <div class="stats-summary-card">
+          <div class="stat-col">
+            <span class="lbl">累計營收</span>
+            <span class="val" id="hud-sales-acc">0</span>
+          </div>
+          <div class="stat-col" style="border-left: 1.5px solid var(--cozy-card-border); padding-left: 12px;">
+            <span class="lbl">在店客數</span>
+            <span class="val" id="hud-customers-count">0 / 6</span>
+          </div>
+          <div class="stat-col" style="border-left: 1.5px solid var(--cozy-card-border); padding-left: 12px;">
+            <span class="lbl">知名度</span>
+            <span class="val" id="hud-reputation" style="color:#d97706;">65 %</span>
+          </div>
+          <div class="stat-col" style="border-left: 1.5px solid var(--cozy-card-border); padding-left: 12px;">
+            <span class="lbl">美觀度</span>
+            <span class="val" id="hud-aesthetics" style="color:#10b981;">85 ★</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 頂部右側時鐘與營業控制 -->
+      <div class="top-right-group">
+        <div class="clock-badge" id="hud-time-str">08:00</div>
+        <button class="btn-ctrl" id="btn-pause-play" title="暫停/繼續">⏸</button>
+        <button class="btn-ctrl" id="btn-speed-toggle" title="切換時間速度">1x</button>
+      </div>
+    </header>
+
+    <!-- 頂部置中提示橫幅 (如參考圖「目標完成！+80 金幣」) -->
+    <div class="top-center-banner" id="top-center-banner">
+      <!-- 動態插入提示文字 -->
+    </div>
+
+    <!-- 右側今日目標卡片 (Daily Quest Card) -->
+    <aside class="quest-board-card">
+      <div class="quest-header">
+        <div class="quest-title-tag">
+          <span>📋 今日目標</span>
+        </div>
+        <span class="quest-gift-icon">🎁</span>
+      </div>
+
+      <div class="quest-task-title" id="quest-title">熱銷飲品大促銷</div>
+      <div class="quest-task-desc" id="quest-desc">累計售出 15 瓶極品綠茶或咖啡</div>
+
+      <div class="quest-progress-wrap">
+        <div class="quest-progress-bg">
+          <div class="quest-progress-bar" id="quest-bar"></div>
+        </div>
+        <div class="quest-count-text" id="quest-count">0 / 15</div>
+      </div>
+
+      <button class="btn-quest ongoing" id="quest-claim-btn" disabled>
+        進行中 (+250 金幣)
+      </button>
+    </aside>
+
+    <!-- 底部操作導航按鈕 (純滑鼠點擊) -->
+    <nav class="bottom-actions-container">
+      <button class="btn-big-action btn-action-order" id="btn-open-order" title="批發進貨與調價">
+        <span class="btn-icon">📦</span>
+        <span class="btn-label">進貨定價</span>
+      </button>
+
+      <button class="btn-big-action btn-action-restock" id="btn-restock-all" title="一鍵快速補滿全店貨架">
+        <span class="btn-icon">⚡</span>
+        <span class="btn-label">一鍵補滿</span>
+      </button>
+
+      <button class="btn-big-action" id="btn-toggle-decor" style="background: linear-gradient(180deg, #ec4899 0%, #be185d 100%);" title="自由調整貨架擺設與美化裝潢">
+        <span class="btn-icon">🎨</span>
+        <span class="btn-label">裝潢擺設</span>
+      </button>
+
+      <button class="btn-big-action" id="btn-open-marketing" style="background: linear-gradient(180deg, #6366f1 0%, #4338ca 100%);" title="行銷宣傳活動">
+        <span class="btn-icon">📣</span>
+        <span class="btn-label">行銷促銷</span>
+      </button>
+
+      <button class="btn-big-action btn-action-close" id="btn-close-store" title="營業結束進行日結">
+        <span class="btn-icon">🏪</span>
+        <span class="btn-label">打烊結算</span>
+      </button>
+    </nav>
+
+    <!-- 裝潢與自由擺設模式控制面板 (Decor Floating Controller) -->
+    <div class="decor-hud-panel" id="decor-hud-panel" style="display: none;">
+      <div class="decor-hud-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:24px;">🎨</span>
+          <div>
+            <div style="font-weight:900; font-size:1rem; color:#831843;">自由擺設美化模式中</div>
+            <div style="font-size:0.75rem; color:#9d174d;">點擊店內任意貨架或裝飾物即可自由挪移、旋轉與更換陳列！</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-decor-shop" id="btn-open-decor-shop">🏬 裝潢商城</button>
+          <button class="btn-decor-exit" id="btn-exit-decor">✅ 完成佈置</button>
+        </div>
+      </div>
+
+      <!-- 選中物件時展開的操作工具列 -->
+      <div class="decor-selection-box" id="decor-selection-box" style="display: none;">
+        <div class="selection-info-bar">
+          <span class="selected-name" id="selected-obj-name">日式極品綠茶冷藏櫃</span>
+          <span class="selected-cat" id="selected-obj-cat">飲料冷藏</span>
+        </div>
+
+        <div class="selection-tools-grid">
+          <!-- 方向微調鍵 -->
+          <div class="tool-group">
+            <span class="tool-title">網格位移</span>
+            <div class="dpad-box">
+              <button class="btn-dpad" id="btn-move-up" title="向上移動">▲</button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-dpad" id="btn-move-left" title="向左移動">◀</button>
+                <button class="btn-dpad" id="btn-rotate-obj" title="旋轉 90 度" style="background:#fde047;">🔄</button>
+                <button class="btn-dpad" id="btn-move-right" title="向右移動">▶</button>
+              </div>
+              <button class="btn-dpad" id="btn-move-down" title="向下移動">▼</button>
+            </div>
+          </div>
+
+          <!-- 貨架專屬：更換陳列商品 -->
+          <div class="tool-group" id="shelf-item-tool-group">
+            <span class="tool-title">更換販售商品</span>
+            <div class="item-select-chips" id="shelf-item-chips">
+              <button class="btn-chip" data-item="onigiri">🍙 御飯糰</button>
+              <button class="btn-chip" data-item="green_tea">🍵 綠茶</button>
+              <button class="btn-chip" data-item="chips">🍟 洋芋片</button>
+              <button class="btn-chip" data-item="instant_noodles">🍜 泡麵</button>
+              <button class="btn-chip" data-item="canned_coffee">☕ 咖啡</button>
+              <button class="btn-chip" data-item="oden">🍢 關東煮</button>
+            </div>
+          </div>
+
+          <!-- 貨架外觀風格與促銷牌 -->
+          <div class="tool-group" id="shelf-theme-tool-group">
+            <span class="tool-title">外觀風格 & 促銷牌</span>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; gap:6px;">
+                <button class="btn-theme-swatch" data-theme="wood" style="background:#d4a373;" title="典雅原木"></button>
+                <button class="btn-theme-swatch" data-theme="white" style="background:#f8fafc; border:1px solid #cbd5e1;" title="極簡純白"></button>
+                <button class="btn-theme-swatch" data-theme="mint" style="background:#34d399;" title="薄荷清爽"></button>
+                <button class="btn-theme-swatch" data-theme="orange" style="background:#fb923c;" title="橘子活力"></button>
+                <button class="btn-theme-swatch" data-theme="dark" style="background:#334155;" title="曜石深黑"></button>
+              </div>
+              <div style="display:flex; gap:4px; margin-top:2px;">
+                <button class="btn-promo-tag" data-tag="hot">🔥 熱銷</button>
+                <button class="btn-promo-tag" data-tag="sale">🎉 特價</button>
+                <button class="btn-promo-tag" data-tag="recommend">⭐ 推薦</button>
+                <button class="btn-promo-tag" data-tag="none">✕ 清除</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 撤除 / 暫存 -->
+          <div class="tool-group" style="align-items:flex-end;">
+            <span class="tool-title">撤除收納</span>
+            <button class="btn-remove-obj" id="btn-remove-selected" title="收回倉庫">
+              🗑️ 收起
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左下角親切店員提示氣泡 -->
+    <div class="bottom-left-bubble" id="clerk-bubble">
+      <div class="bubble-avatar">👧</div>
+      <div class="bubble-text-box">
+        <span class="bubble-title">店長小提醒：自由裝潢與商品擺設</span>
+        <span class="bubble-subtitle">點擊「裝潢擺設」即可自由排列貨架位置、旋轉並更換商品！</span>
+      </div>
+    </div>
+
+    <!-- 右下角縮放按鈕 -->
+    <div class="bottom-right-zoom">
+      <button class="btn-zoom" id="btn-zoom-in" title="放大視角">+</button>
+      <button class="btn-zoom" id="btn-zoom-out" title="縮小視角">-</button>
+    </div>
+
+    <!-- 批發進貨與定價彈窗 (Wholesale Modal) -->
+    <div class="modal-overlay" id="order-modal">
+      <div class="cozy-modal-box">
+        <div class="cozy-modal-header">
+          <span class="modal-header-title">📦 橘子超商 批發進貨與商品定價管理</span>
+          <button class="btn-modal-close" id="btn-close-order">✕</button>
+        </div>
+        <div class="cozy-modal-body" id="order-items-list">
+          <!-- 動態載入各類商品 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 裝潢美化商城彈窗 (Decor Shop Modal) -->
+    <div class="modal-overlay" id="decor-shop-modal">
+      <div class="cozy-modal-box" style="max-width: 680px;">
+        <div class="cozy-modal-header">
+          <span class="modal-header-title">🏬 橘子超商 裝潢美化精品商城</span>
+          <button class="btn-modal-close" id="btn-close-decor-shop">✕</button>
+        </div>
+        <div class="cozy-modal-body">
+          <div style="font-size:0.85rem; color:#64748b; margin-bottom:12px;">
+            購買全新營業貨架與招財美化擺設，提升店鋪知名度、美觀度與顧客滿意度！
+          </div>
+          <div class="decor-shop-grid" id="decor-shop-items">
+            <!-- 動態渲染裝潢商品卡片 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 行銷宣傳活動彈窗 (Marketing Modal) -->
+    <div class="modal-overlay" id="marketing-modal">
+      <div class="cozy-modal-box" style="max-width: 580px;">
+        <div class="cozy-modal-header">
+          <span class="modal-header-title">📣 橘子超商 行銷宣傳部</span>
+          <button class="btn-modal-close" id="btn-close-marketing">✕</button>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+          <!-- 派發傳單 -->
+          <div style="background: #ffffff; border: 2px solid var(--cozy-card-border); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 900; font-size: 1.1rem; color: #1e293b;">📄 周邊社區派發宣傳單</div>
+              <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">立即吸引 3 位顧客進店搶購，知名度 +4%</div>
+            </div>
+            <button id="btn-market-flyer" style="padding: 10px 18px; background: #f59e0b; border: 2px solid var(--cozy-border-dark); border-radius: 12px; color: #fff; font-weight: 900; cursor: pointer;">
+              花費 NT$ 120
+            </button>
+          </div>
+
+          <!-- 買一送一特賣 -->
+          <div style="background: #ffffff; border: 2px solid var(--cozy-card-border); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 900; font-size: 1.1rem; color: #1e293b;">🎊 買一送一特賣慶祝會</div>
+              <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">湧入 4 位熱情顧客大採購，知名度 +10%</div>
+            </div>
+            <button id="btn-market-sale" style="padding: 10px 18px; background: #6366f1; border: 2px solid var(--cozy-border-dark); border-radius: 12px; color: #fff; font-weight: 900; cursor: pointer;">
+              花費 NT$ 300
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 打烊營運結算報表 (Daily Report Modal) -->
+    <div class="modal-overlay" id="daily-report-modal">
+      <div class="cozy-report-card">
+        <h2 class="report-title">🍊 今日營業成果結算</h2>
+        <div style="font-weight: 800; color: #0284c7;" id="report-day-num">第 1 天</div>
+
+        <div class="rating-badge-box">
+          <div class="rating-badge-title">★ 經營綜合評鑑 ★</div>
+          <div class="rating-badge-score" id="report-rating">🍊 S 級 傳奇超商金店長</div>
+        </div>
+
+        <div class="report-grid-box">
+          <div class="grid-cell">
+            <div class="cell-lbl">今日總營業額</div>
+            <div class="cell-val" id="report-revenue">NT$ 0</div>
+          </div>
+          <div class="grid-cell">
+            <div class="cell-lbl">進貨與行銷支出</div>
+            <div class="cell-val" id="report-cogs">NT$ 0</div>
+          </div>
+          <div class="grid-cell">
+            <div class="cell-lbl">當日純利潤</div>
+            <div class="cell-val" id="report-net-profit">NT$ 0</div>
+          </div>
+          <div class="grid-cell">
+            <div class="cell-lbl">接待顧客數</div>
+            <div class="cell-val" id="report-customers">0 位</div>
+          </div>
+          <div class="grid-cell">
+            <div class="cell-lbl">成功售出商品</div>
+            <div class="cell-val" id="report-items-sold">0 件</div>
+          </div>
+          <div class="grid-cell">
+            <div class="cell-lbl">治安與事件</div>
+            <div class="cell-val" id="report-lost-sales">0 次</div>
+          </div>
+        </div>
+
+        <button class="btn-start-next-day" id="btn-next-day">
+          🌅 展開下一天的精彩營運！
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

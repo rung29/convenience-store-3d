@@ -1,0 +1,1044 @@
+/* 暖心日系微縮模擬遊戲樣式表 (Cozy Tycoon UI Theme) - 依據參考圖精準還原 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Outfit:wght@600;800;900&display=swap');
+
+:root {
+  --cozy-bg: #fdf6ec;        /* 溫暖奶油杏仁底色 */
+  --cozy-card: #fffdf9;      /* 溫潤米白卡片 */
+  --cozy-card-border: #edd5b3;
+  --cozy-border-dark: #6e4a2e; /* 典雅深木色邊框 */
+  --cozy-text-dark: #4a3424;   /* 溫暖深褐字體 */
+  --cozy-text-muted: #8c735d;  /* 柔和次要字體 */
+  --cozy-gold: #f59e0b;
+  --cozy-green: #528373;
+  --cozy-shadow: 0 4px 14px rgba(74, 52, 36, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Noto Sans TC', sans-serif;
+  background-color: #f6ede2;
+  color: var(--cozy-text-dark);
+}
+
+#canvas-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* ================== 頂部狀態列 (Top HUD) ================== */
+.top-hud-container {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.top-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+/* 店長頭像卡片 (如參考圖「暖角咖啡」卡) */
+.shop-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 18px;
+  padding: 6px 16px 6px 8px;
+  box-shadow: var(--cozy-shadow);
+}
+
+.shop-avatar {
+  width: 44px;
+  height: 44px;
+  background: #fde047;
+  border-radius: 14px;
+  border: 2px solid var(--cozy-border-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.shop-name-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-name {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+  line-height: 1.2;
+}
+
+.shop-level {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #a16207;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* 我的金幣卡片 */
+.coins-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 18px;
+  padding: 6px 20px 6px 12px;
+  box-shadow: var(--cozy-shadow);
+}
+
+.coin-icon {
+  font-size: 26px;
+}
+
+.coin-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.coin-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--cozy-text-muted);
+}
+
+.coin-amount {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #b45309;
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.1;
+}
+
+/* 累計營收與客人卡片 */
+.stats-summary-card {
+  display: flex;
+  gap: 16px;
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 18px;
+  padding: 8px 18px;
+  box-shadow: var(--cozy-shadow);
+}
+
+.stat-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-col .lbl {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--cozy-text-muted);
+}
+
+.stat-col .val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+  font-family: 'Outfit', sans-serif;
+}
+
+/* 頂部右側控制項 (營業中、暫停、倍速、時間) */
+.top-right-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.clock-badge {
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 14px;
+  padding: 6px 14px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
+  color: #0369a1;
+  box-shadow: var(--cozy-shadow);
+}
+
+.btn-ctrl {
+  background: #fef08a;
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+  cursor: pointer;
+  box-shadow: var(--cozy-shadow);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.btn-ctrl:hover {
+  transform: translateY(-2px);
+  background: #fde047;
+}
+
+/* ================== 頂部置中提示橫幅 (Banner) ================== */
+.top-center-banner {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+  border-radius: 30px;
+  padding: 8px 28px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #92400e;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.top-center-banner.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ================== 右側今日目標卡片 (Daily Quest) ================== */
+.quest-board-card {
+  position: absolute;
+  top: 86px;
+  right: 16px;
+  width: 270px;
+  background: var(--cozy-card);
+  border: 2.5px solid var(--cozy-border-dark);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: var(--cozy-shadow);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quest-title-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+}
+
+.quest-gift-icon {
+  font-size: 1.2rem;
+}
+
+.quest-task-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.quest-task-desc {
+  font-size: 0.75rem;
+  color: var(--cozy-text-muted);
+}
+
+.quest-progress-wrap {
+  margin: 4px 0;
+}
+
+.quest-progress-bg {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  overflow: hidden;
+}
+
+.quest-progress-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #84cc16 0%, #22c55e 100%);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.quest-count-text {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: right;
+  color: var(--cozy-text-muted);
+  font-family: 'Outfit', sans-serif;
+  margin-top: 2px;
+}
+
+.btn-quest {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s, filter 0.15s;
+}
+
+.btn-quest.ready {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+  animation: pulseBtn 1.5s infinite;
+}
+
+.btn-quest.ongoing {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+
+.btn-quest.claimed {
+  background: #bbf7d0;
+  color: #166534;
+  cursor: default;
+}
+
+@keyframes pulseBtn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* ================== 底部中央可愛三大按鈕 (Bottom Actions) ================== */
+.bottom-actions-container {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  z-index: 10;
+}
+
+.btn-big-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 86px;
+  height: 86px;
+  border: 2.5px solid var(--cozy-border-dark);
+  border-radius: 24px;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(74, 52, 36, 0.18);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-big-action:hover {
+  transform: translateY(-6px) scale(1.05);
+}
+
+.btn-big-action:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.btn-big-action .btn-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.btn-big-action .btn-label {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 按鈕專屬色彩 (還原參考圖橘黃、紅粉、綠色) */
+.btn-action-order {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+}
+
+.btn-action-restock {
+  background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+}
+
+.btn-action-close {
+  background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+}
+
+/* ================== 左下角店員氣泡語錄 ================== */
+.bottom-left-bubble {
+  position: absolute;
+  bottom: 24px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 18px;
+  padding: 8px 16px;
+  box-shadow: var(--cozy-shadow);
+  z-index: 10;
+}
+
+.bubble-avatar {
+  font-size: 26px;
+}
+
+.bubble-text-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.bubble-title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+}
+
+.bubble-subtitle {
+  font-size: 0.72rem;
+  color: var(--cozy-text-muted);
+}
+
+/* ================== 右下角縮放按鈕 ================== */
+.bottom-right-zoom {
+  position: absolute;
+  bottom: 24px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.btn-zoom {
+  width: 44px;
+  height: 44px;
+  background: var(--cozy-card);
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 14px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--cozy-shadow);
+  transition: transform 0.15s;
+}
+
+.btn-zoom:hover {
+  transform: translateY(-2px);
+}
+
+/* ================== 進貨與定價彈窗 (Wholesale Modal) ================== */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(74, 52, 36, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cozy-modal-box {
+  width: 90%;
+  max-width: 920px;
+  max-height: 85vh;
+  background: #fdfaf5;
+  border: 3px solid var(--cozy-border-dark);
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.cozy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #f6eedf;
+  border-bottom: 2px solid var(--cozy-card-border);
+}
+
+.modal-header-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+}
+
+.btn-modal-close {
+  background: #fff;
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cozy-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.cozy-order-card {
+  background: #ffffff;
+  border: 2px solid var(--cozy-card-border);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-badge {
+  padding: 2px 8px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.card-stock {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+}
+
+.card-info {
+  font-size: 0.75rem;
+  color: var(--cozy-text-muted);
+}
+
+.card-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef9ed;
+  border: 1px solid #fed7aa;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.price-val {
+  color: #d97706;
+  font-size: 1rem;
+}
+
+.btn-step {
+  width: 26px;
+  height: 26px;
+  background: #ffffff;
+  border: 1.5px solid var(--cozy-border-dark);
+  border-radius: 6px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-buy-box {
+  margin-top: 4px;
+  padding: 10px;
+  border: 2px solid var(--cozy-border-dark);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ================== 打烊結算報表 (Daily Report) ================== */
+.cozy-report-card {
+  width: 90%;
+  max-width: 520px;
+  background: #fffdf9;
+  border: 3.5px solid var(--cozy-border-dark);
+  border-radius: 28px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 25px 50px rgba(74, 52, 36, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+}
+
+.rating-badge-box {
+  background: #fef3c7;
+  border: 2px dashed #f59e0b;
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.rating-badge-title {
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 800;
+}
+
+.rating-badge-score {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #b45309;
+  margin-top: 4px;
+}
+
+.report-grid-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  text-align: left;
+}
+
+.grid-cell {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.grid-cell .cell-lbl {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.grid-cell .cell-val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--cozy-text-dark);
+  font-family: 'Outfit', sans-serif;
+}
+
+.profit-positive { color: #16a34a !important; }
+.profit-negative { color: #dc2626 !important; }
+
+.btn-start-next-day {
+  padding: 14px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  border: 2.5px solid var(--cozy-border-dark);
+  border-radius: 18px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(217, 119, 6, 0.35);
+}
+
+/* ================== 自由擺設美化模式專屬面板 (Decor Floating Controller) ================== */
+.decor-hud-panel {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%;
+  max-width: 820px;
+  max-height: 48vh;
+  overflow-y: auto;
+  background: rgba(255, 253, 249, 0.97);
+  backdrop-filter: blur(12px);
+  border: 2.5px solid #db2777;
+  border-radius: 20px;
+  padding: 12px 18px;
+  box-shadow: 0 12px 36px rgba(219, 39, 119, 0.28);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.decor-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid #fbcfe8;
+  padding-bottom: 10px;
+}
+
+.btn-decor-shop {
+  background: linear-gradient(180deg, #ec4899 0%, #be185d 100%);
+  border: 2px solid #831843;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(190, 24, 93, 0.3);
+  transition: transform 0.15s;
+}
+
+.btn-decor-shop:hover {
+  transform: translateY(-2px);
+}
+
+.btn-decor-exit {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  border: 2px solid #064e3b;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+  transition: transform 0.15s;
+}
+
+.btn-decor-exit:hover {
+  transform: translateY(-2px);
+}
+
+/* 選中物件工具列 */
+.decor-selection-box {
+  background: #fdf2f8;
+  border: 1.5px solid #f472b6;
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selection-info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-name {
+  font-weight: 900;
+  font-size: 1rem;
+  color: #9d174d;
+}
+
+.selected-cat {
+  background: #fbcfe8;
+  color: #831843;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.selection-tools-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #831843;
+}
+
+/* 十字方向鍵與旋轉 */
+.dpad-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-dpad {
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 2px solid #f472b6;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #831843;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.1s, background 0.1s;
+}
+
+.btn-dpad:hover {
+  background: #fdf2f8;
+  transform: scale(1.08);
+}
+
+.btn-dpad:active {
+  transform: scale(0.92);
+}
+
+/* 商品快速切換小晶片 */
+.item-select-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.btn-chip {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-chip:hover {
+  border-color: #f472b6;
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-chip.active {
+  background: #fbcfe8;
+  border-color: #db2777;
+  color: #831843;
+}
+
+/* 貨架風格色彩圓盤 */
+.btn-theme-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn-theme-swatch:hover {
+  transform: scale(1.2);
+}
+
+/* 促銷標籤 */
+.btn-promo-tag {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-promo-tag:hover {
+  background: #fef08a;
+  border-color: #ca8a04;
+}
+
+.btn-remove-obj {
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+  color: #b91c1c;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-remove-obj:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* ================== 裝潢商城格狀排列 ================== */
+.decor-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.decor-card {
+  background: #ffffff;
+  border: 2px solid var(--cozy-card-border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.decor-card:hover {
+  transform: translateY(-3px);
+  border-color: #f59e0b;
+}
+
+.decor-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.decor-card-icon {
+  font-size: 32px;
+  width: 44px;
+  height: 44px;
+  background: #fef3c7;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.decor-card-name {
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.decor-card-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  min-height: 32px;
+}
+
+.decor-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.decor-card-price {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #d97706;
+}
+
+.btn-buy-decor {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  border: 2px solid var(--cozy-border-dark);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.btn-buy-decor:hover {
+  transform: scale(1.05);
+}
+
+.btn-buy-decor:disabled {
+  background: #cbd5e1;
+  border-color: #94a3b8;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+}
+
