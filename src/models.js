@@ -19,7 +19,7 @@ class ModelManager {
 
     try {
       // 載入具備真實人型骨架與動作的 Xbot.glb
-      const gltf = await this.loadAsync('/models/Xbot.glb');
+      const gltf = await this.loadAsync(`${import.meta.env.BASE_URL}models/Xbot.glb`);
       this.humanModel = gltf.scene;
       this.humanClips = gltf.animations;
 
