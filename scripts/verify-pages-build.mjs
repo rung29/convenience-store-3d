@@ -27,12 +27,17 @@ const javascriptBundles = (await readdir(assetsDir))
 const javascript = (
   await Promise.all(javascriptBundles.map((file) => readFile(file, 'utf8')))
 ).join('\n');
-const expectedModelUrl = `${expectedBase}models/Xbot.glb`;
+const expectedModelRefs = [
+  { bundleRef: `${expectedBase}models/Xbot.glb`, fileName: 'Xbot.glb' },
+  { bundleRef: 'models/RobotExpressive.glb', fileName: 'RobotExpressive.glb' },
+  { bundleRef: 'models/Soldier.glb', fileName: 'Soldier.glb' }
+];
 
-if (!javascript.includes(expectedModelUrl)) {
-  throw new Error(`Build does not reference the model at ${expectedModelUrl}`);
+for (const { bundleRef, fileName } of expectedModelRefs) {
+  if (!javascript.includes(bundleRef)) {
+    throw new Error(`Build does not reference the model at ${bundleRef}`);
+  }
+  await access(path.join(distDir, 'models', fileName));
 }
-
-await access(path.join(distDir, 'models', 'Xbot.glb'));
 
 console.log(`GitHub Pages build verified for ${expectedBase}`);

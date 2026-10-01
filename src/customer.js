@@ -4,32 +4,121 @@ import { ITEM_DEFINITIONS } from './items.js';
 import { sounds } from './audio.js';
 import { modelManager } from './models.js';
 
+export const CHARACTER_SET_IDS = Object.freeze({
+  MODERN: 'modern',
+  CHIBI: 'chibi',
+  KAYKIT: 'kaykit',
+  TEST: 'test'
+});
+
+const CHIBI_ARCHETYPES = [
+  { role: '高中生', shirtColor: '#38bdf8', pantsColor: '#1e293b', skinColor: '#fddcb5', hairColor: '#4a2c1a', hairStyle: 'short', name: '小健', fav: '休閒零食', accessory: 'none', assetKey: 'chibiStudent', modelScale: 0.78 },
+  { role: '上班族', shirtColor: '#64748b', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1a1a2e', hairStyle: 'neat', name: '林專員', fav: '飲料冷藏', accessory: 'none', assetKey: 'chibiMerchant', modelScale: 0.78 },
+  { role: '小資女', shirtColor: '#f472b6', pantsColor: '#334155', skinColor: '#fce0c8', hairColor: '#78350f', hairStyle: 'ponytail', name: '欣怡', fav: '鮮食便當', accessory: 'none', assetKey: 'chibiArcher', modelScale: 0.78 },
+  { role: '大學生', shirtColor: '#fbbf24', pantsColor: '#78350f', skinColor: '#f5d0a9', hairColor: '#0f172a', hairStyle: 'messy', name: '阿明', fav: '速食泡麵', accessory: 'none', assetKey: 'chibiStudent', modelScale: 0.78 },
+  { role: '常客阿伯', shirtColor: '#34d399', pantsColor: '#14532d', skinColor: '#e8c49a', hairColor: '#9ca3af', hairStyle: 'bald', name: '陳伯伯', fav: '飲料冷藏', accessory: 'none', assetKey: 'chibiBaseMesh', modelScale: 0.78 },
+  { role: '小學生', shirtColor: '#fb923c', pantsColor: '#1c1917', skinColor: '#fddcb5', hairColor: '#1e293b', hairStyle: 'short', name: '小豪', fav: '休閒零食', accessory: 'none', assetKey: 'chibiStudent', modelScale: 0.68 },
+  { role: 'OL上班族', shirtColor: '#c084fc', pantsColor: '#1e1b4b', skinColor: '#fce0c8', hairColor: '#451a03', hairStyle: 'long', name: '美惠', fav: '飲料冷藏', accessory: 'none', assetKey: 'chibiMerchant', modelScale: 0.78 },
+  { role: '外送員', shirtColor: '#22d3ee', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1e293b', hairStyle: 'helmet', name: '阿翔', fav: '鮮食便當', accessory: 'none', assetKey: 'chibiKnight', modelScale: 0.72 }
+];
+
+const CHIBI_THIEF_ARCHETYPE = {
+  role: '小偷',
+  shirtColor: '#0f172a',
+  pantsColor: '#020617',
+  skinColor: '#d4a373',
+  hairColor: '#0f172a',
+  hairStyle: 'beanie',
+  name: '蒙面小偷',
+  fav: '休閒零食',
+  accessory: 'none',
+  assetKey: 'chibiNinja',
+  modelScale: 0.76
+};
+
+const KAYKIT_ARCHETYPES = [
+  { role: '奇幻騎士', shirtColor: '#38bdf8', pantsColor: '#1e293b', name: '小騎士', fav: '飲料冷藏櫃', accessory: 'none', assetKey: 'kayKnight', modelScale: 0.74 },
+  { role: '森林大力士', shirtColor: '#22c55e', pantsColor: '#14532d', name: '大力士', fav: '洋芋片', accessory: 'none', assetKey: 'kayBarbarian', modelScale: 0.67 },
+  { role: '魔法旅人', shirtColor: '#a78bfa', pantsColor: '#312e81', name: '小魔法師', fav: '關東煮', accessory: 'none', assetKey: 'kayMage', modelScale: 0.74 },
+  { role: '俏皮盜賊', shirtColor: '#fb7185', pantsColor: '#4c1d95', name: '小盜賊', fav: '甜點櫃', accessory: 'none', assetKey: 'kayRogue', modelScale: 0.72 },
+  { role: '披風旅人', shirtColor: '#f59e0b', pantsColor: '#292524', name: '披風客', fav: '咖啡', accessory: 'none', assetKey: 'kayRogueHooded', modelScale: 0.72 }
+];
+
+const KAYKIT_THIEF_ARCHETYPE = {
+  ...KAYKIT_ARCHETYPES[4],
+  role: '披風小偷',
+  name: '披風小偷',
+  assetKey: 'kayRogueHooded',
+  modelScale: 0.72
+};
+
+const TEST_ARCHETYPES = [
+  {
+    role: '機器人測試客',
+    shirtColor: '#60a5fa',
+    pantsColor: '#1e3a8a',
+    skinColor: '#cbd5e1',
+    hairColor: '#475569',
+    hairStyle: 'short',
+    name: '機器人測試員',
+    fav: '飲料冷藏',
+    accessory: 'none',
+    assetKey: 'testRobot',
+    modelScale: 0.72
+  },
+  {
+    role: '士兵測試客',
+    shirtColor: '#4ade80',
+    pantsColor: '#14532d',
+    skinColor: '#d4a373',
+    hairColor: '#334155',
+    hairStyle: 'short',
+    name: '士兵測試員',
+    fav: '休閒零食',
+    accessory: 'none',
+    assetKey: 'testSoldier',
+    modelScale: 0.78
+  }
+];
+
+const TEST_THIEF_ARCHETYPE = {
+  ...TEST_ARCHETYPES[1],
+  role: '測試小偷',
+  name: '士兵測試小偷'
+};
+
+function normalizeCharacterSet(characterSet) {
+  if (characterSet === CHARACTER_SET_IDS.CHIBI) return CHARACTER_SET_IDS.CHIBI;
+  if (characterSet === CHARACTER_SET_IDS.KAYKIT) return CHARACTER_SET_IDS.KAYKIT;
+  if (characterSet === CHARACTER_SET_IDS.TEST) return CHARACTER_SET_IDS.TEST;
+  return CHARACTER_SET_IDS.MODERN;
+}
+
 // 豐富角色庫 — 每個角色都有獨特外觀設定
 const CUSTOMER_ARCHETYPES = [
-  { role: '高中生', shirtColor: '#38bdf8', pantsColor: '#1e293b', skinColor: '#fddcb5', hairColor: '#4a2c1a', hairStyle: 'short', name: '小健', fav: '休閒零食', accessory: 'backpack' },
-  { role: '上班族', shirtColor: '#64748b', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1a1a2e', hairStyle: 'neat', name: '林專員', fav: '飲料冷藏', accessory: 'briefcase' },
-  { role: '小資女', shirtColor: '#f472b6', pantsColor: '#334155', skinColor: '#fce0c8', hairColor: '#78350f', hairStyle: 'ponytail', name: '欣怡', fav: '鮮食便當', accessory: 'handbag' },
-  { role: '大學生', shirtColor: '#fbbf24', pantsColor: '#78350f', skinColor: '#f5d0a9', hairColor: '#0f172a', hairStyle: 'messy', name: '阿明', fav: '速食泡麵', accessory: 'cap' },
-  { role: '常客阿伯', shirtColor: '#34d399', pantsColor: '#14532d', skinColor: '#e8c49a', hairColor: '#9ca3af', hairStyle: 'bald', name: '陳伯伯', fav: '飲料冷藏', accessory: 'none' },
-  { role: '小學生', shirtColor: '#fb923c', pantsColor: '#1c1917', skinColor: '#fddcb5', hairColor: '#1e293b', hairStyle: 'short', name: '小豪', fav: '休閒零食', accessory: 'backpack' },
-  { role: 'OL上班族', shirtColor: '#c084fc', pantsColor: '#1e1b4b', skinColor: '#fce0c8', hairColor: '#451a03', hairStyle: 'long', name: '美惠', fav: '飲料冷藏', accessory: 'handbag' },
-  { role: '外送員', shirtColor: '#22d3ee', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1e293b', hairStyle: 'helmet', name: '阿翔', fav: '鮮食便當', accessory: 'none' }
+  { role: '高中生', shirtColor: '#38bdf8', pantsColor: '#1e293b', skinColor: '#fddcb5', hairColor: '#4a2c1a', hairStyle: 'short', name: '小健', fav: '休閒零食', accessory: 'backpack', assetKey: 'characterShopperBasket' },
+  { role: '上班族', shirtColor: '#64748b', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1a1a2e', hairStyle: 'neat', name: '林專員', fav: '飲料冷藏', accessory: 'briefcase', assetKey: 'characterManager' },
+  { role: '小資女', shirtColor: '#f472b6', pantsColor: '#334155', skinColor: '#fce0c8', hairColor: '#78350f', hairStyle: 'ponytail', name: '欣怡', fav: '鮮食便當', accessory: 'handbag', assetKey: 'characterSelfCheckout' },
+  { role: '大學生', shirtColor: '#fbbf24', pantsColor: '#78350f', skinColor: '#f5d0a9', hairColor: '#0f172a', hairStyle: 'messy', name: '阿明', fav: '速食泡麵', accessory: 'cap', assetKey: 'characterShopperTrolley' },
+  { role: '常客阿伯', shirtColor: '#34d399', pantsColor: '#14532d', skinColor: '#e8c49a', hairColor: '#9ca3af', hairStyle: 'bald', name: '陳伯伯', fav: '飲料冷藏', accessory: 'none', assetKey: 'characterElderly' },
+  { role: '小學生', shirtColor: '#fb923c', pantsColor: '#1c1917', skinColor: '#fddcb5', hairColor: '#1e293b', hairStyle: 'short', name: '小豪', fav: '休閒零食', accessory: 'backpack', assetKey: 'characterChildBalloon' },
+  { role: 'OL上班族', shirtColor: '#c084fc', pantsColor: '#1e1b4b', skinColor: '#fce0c8', hairColor: '#451a03', hairStyle: 'long', name: '美惠', fav: '飲料冷藏', accessory: 'handbag', assetKey: 'characterShopperReaching' },
+  { role: '外送員', shirtColor: '#22d3ee', pantsColor: '#0f172a', skinColor: '#f5d0a9', hairColor: '#1e293b', hairStyle: 'helmet', name: '阿翔', fav: '鮮食便當', accessory: 'none', assetKey: 'characterDeliveryDriver' }
 ];
 
 export class Customer {
-  constructor(id, store, onCheckoutComplete, onLostSale, isThief = false) {
+  constructor(id, store, onCheckoutComplete, onLostSale, isThief = false, characterSet = CHARACTER_SET_IDS.MODERN) {
     this.id = id;
     this.store = store;
     this.onCheckoutComplete = onCheckoutComplete;
     this.onLostSale = onLostSale;
     this.isThief = isThief;
+    this.characterSet = normalizeCharacterSet(characterSet);
 
     this.state = isThief ? 'STEALING' : 'WALKING_IN';
     this.speed = isThief ? 1.4 : 1.9;
 
-    this.archetype = isThief
-      ? { role: '小偷', shirtColor: '#0f172a', pantsColor: '#020617', skinColor: '#d4a373', hairColor: '#0f172a', hairStyle: 'beanie', name: '蒙面小偷', accessory: 'none' }
-      : CUSTOMER_ARCHETYPES[Math.floor(Math.random() * CUSTOMER_ARCHETYPES.length)];
+    this.archetype = this.createArchetype();
 
     this.wishList = this.generateWishList();
     this.currentWishIndex = 0;
@@ -41,8 +130,13 @@ export class Customer {
     this.waitTime = 0;
     this.bobTime = Math.random() * Math.PI * 2; // 行走彈跳相位
     this.assignedTable = null;
+    this.tipClaimed = false;
 
     this.group = new THREE.Group();
+    this.usesImportedCharacter = false;
+    this.importedMixer = null;
+    this.importedActions = null;
+    this.importedAction = null;
 
     // 始終採用精緻 Q 版日系微縮可愛人偶 (經典遊戲橘子便利商店美術風格)
     this.buildChibiCharacter();
@@ -61,18 +155,26 @@ export class Customer {
     this.group.add(this.contactShadow);
 
     // 手提小購物籃 (購物時提在手上，放入所選商品)
-    if (!this.isThief) {
-      this.buildShoppingBasket();
-    } else {
+    if (this.isThief) {
       this.buildThiefLootSack();
+    } else if (!this.usesImportedCharacter) {
+      this.buildShoppingBasket();
     }
 
     // 頭頂心情對話氣泡
     this.createMoodBubble();
 
+    // 讓顧客成為畫面中可辨識的展示素材，而不是縮在走道裡的小點。
+    this.group.scale.setScalar(1.15);
+
     // 出生點
-    this.group.position.set(-2.0 + Math.random() * 4.0, 0, 9.5);
-    this.store.scene.add(this.group);
+    const interiorScale = this.store.interiorRoot?.scale.x || 1;
+    this.group.position.set(
+      (-2.0 + Math.random() * 4.0) / interiorScale,
+      0,
+      9.5 / interiorScale
+    );
+    (this.store.interiorRoot || this.store.scene).add(this.group);
 
     // 註冊滑鼠可點擊互動
     this.group.traverse(child => {
@@ -93,6 +195,80 @@ export class Customer {
     }
   }
 
+  createArchetype() {
+    if (this.isThief) {
+      if (this.characterSet === CHARACTER_SET_IDS.TEST) {
+        return { ...TEST_THIEF_ARCHETYPE };
+      }
+      if (this.characterSet === CHARACTER_SET_IDS.CHIBI) {
+        return { ...CHIBI_THIEF_ARCHETYPE };
+      }
+      if (this.characterSet === CHARACTER_SET_IDS.KAYKIT) {
+        return { ...KAYKIT_THIEF_ARCHETYPE };
+      }
+      return {
+        role: '小偷',
+        shirtColor: '#0f172a',
+        pantsColor: '#020617',
+        skinColor: '#d4a373',
+        hairColor: '#0f172a',
+        hairStyle: 'beanie',
+        name: '蒙面小偷',
+        fav: '休閒零食',
+        accessory: 'none',
+        assetKey: 'characterShopperBasket'
+      };
+    }
+
+    const archetypes = this.characterSet === CHARACTER_SET_IDS.TEST
+      ? TEST_ARCHETYPES
+        : this.characterSet === CHARACTER_SET_IDS.CHIBI
+          ? CHIBI_ARCHETYPES
+          : this.characterSet === CHARACTER_SET_IDS.KAYKIT
+            ? KAYKIT_ARCHETYPES
+            : CUSTOMER_ARCHETYPES;
+    return archetypes[Math.floor(Math.random() * archetypes.length)];
+  }
+
+  setCharacterSet(characterSet) {
+    const nextSet = normalizeCharacterSet(characterSet);
+    if (nextSet === this.characterSet) return false;
+
+    this.characterSet = nextSet;
+    this.archetype = this.createArchetype();
+    this.importedMixer?.stopAllAction();
+    this.importedMixer = null;
+    this.importedActions = null;
+    this.importedAction = null;
+
+    if (this.bodyGroup) this.group.remove(this.bodyGroup);
+    this.bodyGroup = null;
+    this.headGroup = null;
+    this.leftArm = null;
+    this.rightArm = null;
+    this.leftLeg = null;
+    this.rightLeg = null;
+    this.leftShoe = null;
+    this.rightShoe = null;
+    this.basketGroup = null;
+    this.basketContentsGroup = null;
+    this.sackGroup = null;
+    this.usesImportedCharacter = false;
+    this.importedCharacter = null;
+
+    this.buildChibiCharacter();
+    if (this.isThief) {
+      this.buildThiefLootSack();
+    } else if (!this.usesImportedCharacter) {
+      this.buildShoppingBasket();
+    }
+
+    this.group.traverse(child => {
+      child.userData = { isCustomer: true, customer: this, isThief: this.isThief };
+    });
+    return true;
+  }
+
   generateWishList() {
     const allKeys = Object.keys(this.store.shelves).map(k => this.store.shelves[k].itemId);
     const count = 1 + Math.floor(Math.random() * 3);
@@ -103,7 +279,245 @@ export class Customer {
   // ============================================
   // 精緻 Q 版可愛角色建構 (Chibi Character Builder)
   // ============================================
+  buildImportedCharacter(imported) {
+    this.usesImportedCharacter = true;
+    this.importedCharacter = imported;
+    this.bodyGroup = new THREE.Group();
+    this.bodyGroup.name = `character-${this.archetype.assetKey}`;
+
+    const scale = this.characterSet === CHARACTER_SET_IDS.CHIBI
+      || this.characterSet === CHARACTER_SET_IDS.KAYKIT
+      || this.characterSet === CHARACTER_SET_IDS.TEST
+      ? (this.archetype.modelScale ?? 0.78)
+      : this.archetype.assetKey === 'characterChildBalloon'
+        ? 0.82
+        : this.archetype.assetKey === 'characterDeliveryDriver' ? 0.98 : 1.0;
+    imported.scale.setScalar(scale);
+
+    // KayKit's rig origin is around the pelvis, unlike the A/B store models
+    // whose feet already sit on y=0. Lift only C models to prevent their feet
+    // from sinking into the floor when the customer group is placed.
+    if (this.characterSet === CHARACTER_SET_IDS.KAYKIT) {
+      imported.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(imported);
+      if (Number.isFinite(bounds.min.y) && bounds.min.y < 0) {
+        imported.position.y -= bounds.min.y;
+      }
+    }
+
+    imported.traverse(node => {
+      if (!node.isMesh || !node.material || !this.isThief) return;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      materials.forEach(material => {
+        if (material.color) material.color.multiplyScalar(0.42);
+        material.roughness = 0.85;
+      });
+    });
+
+    this.bodyGroup.add(imported);
+    this.group.add(this.bodyGroup);
+    this.headGroup = null;
+    this.leftArm = null;
+    this.rightArm = null;
+    this.leftLeg = null;
+    this.rightLeg = null;
+    this.leftShoe = null;
+    this.rightShoe = null;
+
+    const clips = modelManager.getStoreAssetAnimations(this.archetype.assetKey);
+    if (clips.length > 0) {
+      this.importedMixer = new THREE.AnimationMixer(imported);
+      const idleClip = clips.find(clip => /idle|iddle/i.test(clip.name)) || clips[0];
+      const walkClip = clips.find(clip => /walk/i.test(clip.name)) || idleClip;
+      this.importedActions = {
+        idle: this.importedMixer.clipAction(idleClip),
+        walk: this.importedMixer.clipAction(walkClip)
+      };
+      this.importedAction = this.importedActions.idle;
+      this.importedAction.play();
+    }
+
+    this.addTaiwaneseCharacterDetails();
+  }
+
+  playImportedAnimation(name) {
+    const target = this.importedActions?.[name] || this.importedActions?.idle;
+    if (!target || target === this.importedAction) return;
+
+    if (this.importedAction) this.importedAction.fadeOut(0.18);
+    target.reset().fadeIn(0.18).play();
+    this.importedAction = target;
+  }
+
+  addTaiwaneseCharacterDetails() {
+    const detailGroup = new THREE.Group();
+    detailGroup.name = 'taiwan-style-character-details';
+    if (this.characterSet === CHARACTER_SET_IDS.KAYKIT) {
+      detailGroup.position.y = 0.28;
+    }
+    const key = this.archetype.assetKey;
+    const accessory = this.archetype.accessory;
+    const accent = this.isThief ? '#7f1d1d' : (this.archetype.shirtColor || '#f97316');
+
+    const addMesh = mesh => {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      detailGroup.add(mesh);
+      return mesh;
+    };
+
+    // A tiny 24H badge gives every imported role the same Taiwanese convenience-store identity.
+    const badgeCanvas = document.createElement('canvas');
+    badgeCanvas.width = 96;
+    badgeCanvas.height = 48;
+    const badgeContext = badgeCanvas.getContext('2d');
+    badgeContext.fillStyle = '#fff7ed';
+    badgeContext.fillRect(0, 0, 96, 48);
+    badgeContext.fillStyle = accent;
+    badgeContext.fillRect(0, 0, 96, 8);
+    badgeContext.fillStyle = '#14532d';
+    badgeContext.font = 'bold 28px sans-serif';
+    badgeContext.textAlign = 'center';
+    badgeContext.textBaseline = 'middle';
+    badgeContext.fillText('24H', 48, 29);
+    const badge = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(badgeCanvas),
+      transparent: true,
+      depthWrite: false
+    }));
+    badge.position.set(0.12, 0.94, 0.42);
+    badge.scale.set(0.18, 0.09, 1);
+    detailGroup.add(badge);
+
+    if (this.isThief) {
+      const mask = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.12, 0.025),
+        new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.7 })
+      ));
+      mask.position.set(0, 1.34, 0.39);
+      const eyeBand = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.38, 0.035, 0.03),
+        new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.6 })
+      ));
+      eyeBand.position.set(0, 1.43, 0.40);
+    }
+
+    // The Godot chibi set already has strong silhouettes and themed outfits.
+    // Keep only the small 24H identity badge (and thief mask) so extra geometry
+    // does not make the rounded models look boxy again.
+    if (this.characterSet === CHARACTER_SET_IDS.CHIBI || this.characterSet === CHARACTER_SET_IDS.KAYKIT) {
+      this.bodyGroup.add(detailGroup);
+      return;
+    }
+
+    if (accessory === 'backpack') {
+      const backpack = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, 0.30, 0.13),
+        new THREE.MeshStandardMaterial({ color: accent, roughness: 0.65 })
+      ));
+      backpack.position.set(0, 0.78, -0.25);
+      [-0.08, 0.08].forEach(x => {
+        const strap = addMesh(new THREE.Mesh(
+          new THREE.BoxGeometry(0.035, 0.29, 0.025),
+          new THREE.MeshStandardMaterial({ color: '#fef3c7', roughness: 0.7 })
+        ));
+        strap.position.set(x, 0.82, -0.17);
+      });
+      if (key !== 'characterChildBalloon') this.addBubbleTea(detailGroup, 0.30, 0.62, 0.24);
+    }
+
+    if (accessory === 'handbag') {
+      const handbag = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.20, 0.16, 0.12),
+        new THREE.MeshStandardMaterial({ color: '#be185d', roughness: 0.55 })
+      ));
+      handbag.position.set(-0.31, 0.58, 0.20);
+      const handle = addMesh(new THREE.Mesh(
+        new THREE.TorusGeometry(0.075, 0.012, 6, 12, Math.PI),
+        new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.45 })
+      ));
+      handle.position.set(-0.31, 0.70, 0.20);
+      handle.rotation.y = Math.PI / 2;
+      this.addBubbleTea(detailGroup, 0.30, 0.62, 0.24);
+    }
+
+    if (accessory === 'briefcase') {
+      const briefcase = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.16, 0.08),
+        new THREE.MeshStandardMaterial({ color: '#78350f', roughness: 0.72 })
+      ));
+      briefcase.position.set(0.31, 0.56, 0.20);
+      const handle = addMesh(new THREE.Mesh(
+        new THREE.TorusGeometry(0.055, 0.01, 6, 10, Math.PI),
+        new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.45 })
+      ));
+      handle.position.set(0.31, 0.67, 0.20);
+      handle.rotation.y = Math.PI / 2;
+    }
+
+    if (accessory === 'cap') {
+      const cap = addMesh(new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        new THREE.MeshStandardMaterial({ color: '#dc2626', roughness: 0.55 })
+      ));
+      cap.position.set(0, 1.56, 0);
+      const brim = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.26, 0.035, 0.13),
+        new THREE.MeshStandardMaterial({ color: '#991b1b', roughness: 0.55 })
+      ));
+      brim.position.set(0, 1.53, 0.18);
+    }
+
+    if (key === 'characterDeliveryDriver') {
+      const helmet = addMesh(new THREE.Mesh(
+        new THREE.SphereGeometry(0.26, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.58),
+        new THREE.MeshStandardMaterial({ color: '#0f766e', roughness: 0.35, metalness: 0.05 })
+      ));
+      helmet.position.set(0, 1.57, 0);
+      const visor = addMesh(new THREE.Mesh(
+        new THREE.BoxGeometry(0.28, 0.035, 0.11),
+        new THREE.MeshStandardMaterial({ color: '#bae6fd', transparent: true, opacity: 0.78, roughness: 0.2 })
+      ));
+      visor.position.set(0, 1.52, 0.20);
+    }
+
+    this.bodyGroup.add(detailGroup);
+  }
+
+  addBubbleTea(parent, x, y, z) {
+    const cupGroup = new THREE.Group();
+    const cup = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.055, 0.045, 0.14, 10),
+      new THREE.MeshStandardMaterial({ color: '#f9a8d4', roughness: 0.42, transparent: true, opacity: 0.94 })
+    );
+    cup.castShadow = true;
+    cupGroup.add(cup);
+    const tea = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.035, 0.09, 10),
+      new THREE.MeshStandardMaterial({ color: '#7c2d12', roughness: 0.65 })
+    );
+    tea.position.y = 0.025;
+    cupGroup.add(tea);
+    const straw = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.008, 0.12, 6),
+      new THREE.MeshStandardMaterial({ color: '#f97316', roughness: 0.45 })
+    );
+    straw.position.set(0.015, 0.115, 0);
+    straw.rotation.z = -0.12;
+    cupGroup.add(straw);
+    cupGroup.position.set(x, y, z);
+    parent.add(cupGroup);
+  }
+
   buildChibiCharacter() {
+    const imported = this.archetype.assetKey
+      ? modelManager.createStoreAssetInstance(this.archetype.assetKey)
+      : null;
+    if (imported) {
+      this.buildImportedCharacter(imported);
+      return;
+    }
+
     const a = this.archetype;
     const skinMat = new THREE.MeshStandardMaterial({ color: a.skinColor, roughness: 0.75, metalness: 0.0 });
     const shirtMat = new THREE.MeshStandardMaterial({ color: a.shirtColor, roughness: 0.6 });
@@ -606,9 +1020,14 @@ export class Customer {
 
   update(delta) {
     // Q 版程序動畫：行走時身體上下彈跳、手臂與腿部鐘擺擺動
+    const isMoving = this.state === 'WALKING_IN' || this.state === 'WALKING_OUT' || this.state === 'BROWSING' || this.state === 'WAITING_CHECKOUT';
+    if (this.importedMixer) {
+      this.importedMixer.update(delta);
+      this.playImportedAnimation(isMoving ? 'walk' : 'idle');
+    }
+
     if (this.bodyGroup) {
       this.bobTime += delta * 8;
-      const isMoving = this.state === 'WALKING_IN' || this.state === 'WALKING_OUT' || this.state === 'BROWSING' || this.state === 'WAITING_CHECKOUT';
 
       if (isMoving) {
         // 身體上下彈跳
@@ -860,6 +1279,6 @@ export class Customer {
   destroy() {
     this.state = 'DONE';
     if (this.assignedTable) this.assignedTable.isOccupied = false;
-    this.store.scene.remove(this.group);
+    this.group.parent?.remove(this.group);
   }
 }

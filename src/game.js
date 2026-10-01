@@ -1,7 +1,8 @@
 // 遊戲核心邏輯 - 遊戲橘子《便利商店》風格與純滑鼠微縮經營
 import * as THREE from 'three';
 import { Store3D } from './store3d.js';
-import { Customer } from './customer.js';
+import { CHARACTER_SET_IDS, Customer } from './customer.js';
+import { modelManager } from './models.js';
 import { ITEM_DEFINITIONS } from './items.js';
 import { sounds } from './audio.js';
 import confetti from 'canvas-confetti';
@@ -19,6 +20,8 @@ export class Game {
     this.isStoreOpen = true; // 是否營業中
     this.isPaused = false;   // 暫停開關
     this.timeSpeed = 1.0;    // 時間倍率 (1x, 2x)
+    this.characterSet = CHARACTER_SET_IDS.MODERN;
+    this.testCharactersEnabled = false;
     this.isDecorMode = false; // 是否在自由裝潢佈置模式
 
     // 當日營運統計
@@ -49,8 +52,10 @@ export class Game {
     this.customerSpawnTimer = 0;
     this.thiefTimer = 0;
 
-    // 滑鼠正交相機視角控制
-    this.cameraZoom = 45;
+    // 滑鼠正交相機視角控制：預設把店內主場景放大，讓商品與陳列細節成為畫面主角。
+    // 保留完整地圖，但用更近的正交鏡頭讓店舖、貨架與角色同步放大。
+    // Keep the whole expanded plaza in frame; the layout, not a close crop, carries the detail.
+    this.cameraZoom = window.innerWidth < 720 ? 28 : 22;
     this.cameraPan = new THREE.Vector3(0, 0, 0);
 
     // 初始化場景與微縮店鋪
@@ -80,6 +85,7 @@ export class Game {
   initIsometricScene() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xf6ede2); // 溫暖米粉白
+    this.scene.fog = new THREE.Fog(0xf6ede2, 42, 86);
 
     const aspect = window.innerWidth / window.innerHeight;
     const d = this.cameraZoom;
@@ -91,6 +97,9 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
@@ -104,6 +113,7 @@ export class Game {
       this.camera.bottom = -zoom;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
   }
 
@@ -230,7 +240,7 @@ export class Game {
     this.container.addEventListener('wheel', e => {
       e.preventDefault();
       this.cameraZoom += e.deltaY * 0.03;
-      this.cameraZoom = Math.max(20, Math.min(80, this.cameraZoom));
+      this.cameraZoom = Math.max(12, Math.min(68, this.cameraZoom));
       this.updateCameraTransform();
     }, { passive: false });
   }
@@ -381,7 +391,11 @@ export class Game {
     const itemDef = ITEM_DEFINITIONS[data.itemId];
     const shelf = this.store.shelves[data.targetShelfId];
 
-    if (!shelf) return;
+    if (!itemDef || !shelf) {
+      this.showTopBanner('⚠️ 這箱貨品找不到對應貨架，請重新進貨。');
+      sounds.playDisappointed();
+      return;
+    }
 
     const space = shelf.capacity - shelf.currentCount;
     if (space <= 0) {
@@ -437,6 +451,13 @@ export class Game {
 
   // 點擊顧客互動
   clickCustomerInteract(customer) {
+    if (!customer || customer.isThief || customer.state === 'DONE') return;
+    if (customer.tipClaimed) {
+      this.showTopBanner(`🤗 ${customer.archetype.name} 已經送過小費囉！`);
+      return;
+    }
+
+    customer.tipClaimed = true;
     customer.setMood('🥰');
     const tip = 20;
     this.money += tip;
@@ -458,26 +479,39 @@ export class Game {
   restockAllShelves() {
     let totalRestocked = 0;
     let totalCost = 0;
+    let hasShortage = false;
+    let hasNeed = false;
 
     Object.values(this.store.shelves).forEach(shelf => {
       const itemDef = ITEM_DEFINITIONS[shelf.itemId];
+      if (!itemDef) return;
       const needed = shelf.capacity - shelf.currentCount;
-      if (needed > 0) {
-        const cost = itemDef.cost * needed;
-        if (this.money >= cost) {
-          this.money -= cost;
-          totalCost += cost;
-          shelf.currentCount = shelf.capacity;
-          totalRestocked += needed;
-          this.store.refreshShelfItems(shelf.id);
-        }
+      if (needed <= 0) return;
+
+      hasNeed = true;
+      const affordable = Math.floor(this.money / itemDef.cost);
+      const restockAmount = Math.min(needed, affordable);
+      if (restockAmount > 0) {
+        const cost = itemDef.cost * restockAmount;
+        this.money -= cost;
+        totalCost += cost;
+        shelf.currentCount += restockAmount;
+        totalRestocked += restockAmount;
+        this.store.refreshShelfItems(shelf.id);
+      }
+      if (restockAmount < needed) {
+        hasShortage = true;
       }
     });
 
     if (totalRestocked > 0) {
       this.dayStats.cogs += totalCost;
       sounds.playCashRegister();
-      this.showTopBanner(`🎉 一鍵補貨完成！補齊 ${totalRestocked} 件商品 (總支出 NT$ ${totalCost})`);
+      const shortageMessage = hasShortage ? '（資金不足，已先補能負擔的數量）' : '';
+      this.showTopBanner(`🎉 一鍵補貨完成！補齊 ${totalRestocked} 件商品 (總支出 NT$ ${totalCost})${shortageMessage}`);
+    } else if (hasNeed && hasShortage) {
+      this.showTopBanner('❌ 目前資金不足，無法進貨；請先提高售價、完成交易或進行行銷。');
+      sounds.playDisappointed();
     } else {
       this.showTopBanner('✨ 全店貨架目前都是滿滿的狀態！');
       sounds.playClick();
@@ -504,7 +538,7 @@ export class Game {
       for (let i = 0; i < 3; i++) {
         setTimeout(() => {
           if (this.customers.length < 7) {
-            const c = new Customer(Date.now() + i, this.store, this.onCustomerCheckout.bind(this), this.onCustomerLostSale.bind(this));
+            const c = this.createCustomer(Date.now() + i);
             this.customers.push(c);
           }
         }, i * 600);
@@ -529,7 +563,7 @@ export class Game {
       for (let i = 0; i < 4; i++) {
         setTimeout(() => {
           if (this.customers.length < 8) {
-            const c = new Customer(Date.now() + i, this.store, this.onCustomerCheckout.bind(this), this.onCustomerLostSale.bind(this));
+            const c = this.createCustomer(Date.now() + i);
             this.customers.push(c);
           }
         }, i * 500);
@@ -581,7 +615,109 @@ export class Game {
     }
   }
 
+  createCustomer(id, isThief = false) {
+    const activeCharacterSet = this.testCharactersEnabled
+      ? CHARACTER_SET_IDS.TEST
+      : this.characterSet;
+    return new Customer(
+      id,
+      this.store,
+      this.onCustomerCheckout.bind(this),
+      this.onCustomerLostSale.bind(this),
+      isThief,
+      activeCharacterSet
+    );
+  }
+
+  setCharacterSet(characterSet) {
+    const supportedSets = [
+      CHARACTER_SET_IDS.MODERN,
+      CHARACTER_SET_IDS.CHIBI,
+      CHARACTER_SET_IDS.KAYKIT
+    ];
+    const nextSet = supportedSets.includes(characterSet)
+      ? characterSet
+      : CHARACTER_SET_IDS.MODERN;
+
+    if (nextSet === this.characterSet) return false;
+
+    if (nextSet === CHARACTER_SET_IDS.CHIBI) {
+      const requiredAssets = ['chibiArcher', 'chibiBaseMesh', 'chibiKnight', 'chibiMerchant', 'chibiNinja', 'chibiStudent'];
+      if (!requiredAssets.every(key => modelManager.hasStoreAsset(key))) {
+        this.showTopBanner('⚠️ Q版角色素材尚未載入完成，請重新整理後再試。');
+        sounds.playDisappointed();
+        return false;
+      }
+    }
+
+    if (nextSet === CHARACTER_SET_IDS.KAYKIT) {
+      const requiredAssets = ['kayKnight', 'kayBarbarian', 'kayMage', 'kayRogue', 'kayRogueHooded'];
+      if (!requiredAssets.every(key => modelManager.hasStoreAsset(key))) {
+        this.showTopBanner('角色 C 素材尚未載入，請重新整理後再試一次');
+        sounds.playDisappointed();
+        return false;
+      }
+    }
+
+    this.characterSet = nextSet;
+    if (!this.testCharactersEnabled) {
+      this.customers.forEach(customer => customer.setCharacterSet(nextSet));
+    }
+
+    const button = document.getElementById('btn-character-set');
+    if (button) {
+      button.textContent = nextSet === CHARACTER_SET_IDS.CHIBI ? '角色 B' : '角色 A';
+      button.title = nextSet === CHARACTER_SET_IDS.CHIBI ? '切換回原本角色素材' : '切換至 Q 版角色素材';
+      button.classList.toggle('is-chibi', nextSet === CHARACTER_SET_IDS.CHIBI);
+      if (nextSet === CHARACTER_SET_IDS.KAYKIT) {
+        button.textContent = '角色 C';
+        button.title = '切換 KayKit Adventurers 角色素材';
+      }
+      button.classList.toggle('is-kaykit', nextSet === CHARACTER_SET_IDS.KAYKIT);
+    }
+
+    sounds.playClick();
+    this.showTopBanner(nextSet === CHARACTER_SET_IDS.CHIBI
+      ? '✨ 已切換至 B 套 Q 版角色素材！'
+      : '🎨 已切換回 A 套原本角色素材！');
+    if (nextSet === CHARACTER_SET_IDS.KAYKIT) {
+      this.showTopBanner('已切換角色 C：KayKit Adventurers 奇幻旅人');
+    }
+    return true;
+  }
+
   // 動畫主迴圈
+  setTestCharactersEnabled(enabled) {
+    const nextEnabled = Boolean(enabled);
+    if (nextEnabled === this.testCharactersEnabled) return false;
+
+    if (nextEnabled) {
+      const requiredAssets = ['testRobot', 'testSoldier'];
+      if (!requiredAssets.every(key => modelManager.hasStoreAsset(key))) {
+        this.showTopBanner('⚠️ 測試角色模型尚未載入完成。');
+        sounds.playDisappointed();
+        return false;
+      }
+    }
+
+    this.testCharactersEnabled = nextEnabled;
+    const activeCharacterSet = nextEnabled ? CHARACTER_SET_IDS.TEST : this.characterSet;
+    this.customers.forEach(customer => customer.setCharacterSet(activeCharacterSet));
+
+    const button = document.getElementById('btn-test-characters');
+    if (button) {
+      button.textContent = nextEnabled ? '測試 ON' : '測試 OFF';
+      button.title = nextEnabled ? '關閉 RobotExpressive／Soldier 測試角色' : '開啟 RobotExpressive／Soldier 測試角色';
+      button.classList.toggle('is-enabled', nextEnabled);
+    }
+
+    sounds.playClick();
+    this.showTopBanner(nextEnabled
+      ? '🧪 已開啟測試角色：RobotExpressive／Soldier'
+      : '🧪 已關閉測試角色，恢復目前角色套組');
+    return true;
+  }
+
   animate() {
     requestAnimationFrame(this.animate);
     const delta = this.clock.getDelta();
@@ -598,12 +734,7 @@ export class Game {
       this.customerSpawnTimer += delta * this.timeSpeed;
       if (this.customerSpawnTimer >= 4.5 && this.customers.length < 6) {
         this.customerSpawnTimer = 0;
-        const newCustomer = new Customer(
-          Date.now(),
-          this.store,
-          this.onCustomerCheckout.bind(this),
-          this.onCustomerLostSale.bind(this)
-        );
+        const newCustomer = this.createCustomer(Date.now());
         this.customers.push(newCustomer);
       }
 
@@ -612,13 +743,7 @@ export class Game {
       if (this.thiefTimer >= 35.0) {
         this.thiefTimer = 0;
         if (!this.customers.some(c => c.isThief)) {
-          const thief = new Customer(
-            Date.now(),
-            this.store,
-            this.onCustomerCheckout.bind(this),
-            this.onCustomerLostSale.bind(this),
-            true // isThief = true!
-          );
+          const thief = this.createCustomer(Date.now(), true);
           this.customers.push(thief);
           this.showTopBanner('🚨 注意！有蒙面小偷鬼鬼祟祟溜進超商了！快用滑鼠點擊逮捕他！');
           sounds.playDisappointed();
@@ -789,7 +914,29 @@ export class Game {
       };
     }
 
+    // 顧客角色素材套組切換
+    const btnCharacterSet = document.getElementById('btn-character-set');
+    if (btnCharacterSet) {
+      btnCharacterSet.onclick = () => {
+        const characterSets = [
+          CHARACTER_SET_IDS.MODERN,
+          CHARACTER_SET_IDS.CHIBI,
+          CHARACTER_SET_IDS.KAYKIT
+        ];
+        const currentIndex = characterSets.indexOf(this.characterSet);
+        const nextSet = characterSets[(currentIndex + 1) % characterSets.length];
+        this.setCharacterSet(nextSet);
+      };
+    }
+
     // 一鍵補滿
+    const btnTestCharacters = document.getElementById('btn-test-characters');
+    if (btnTestCharacters) {
+      btnTestCharacters.onclick = () => {
+        this.setTestCharactersEnabled(!this.testCharactersEnabled);
+      };
+    }
+
     const btnRestockAll = document.getElementById('btn-restock-all');
     if (btnRestockAll) {
       btnRestockAll.onclick = () => this.restockAllShelves();
@@ -826,14 +973,14 @@ export class Game {
     const btnZoomIn = document.getElementById('btn-zoom-in');
     if (btnZoomIn) {
       btnZoomIn.onclick = () => {
-        this.cameraZoom = Math.max(20, this.cameraZoom - 8);
+        this.cameraZoom = Math.max(12, this.cameraZoom - 3);
         this.updateCameraTransform();
       };
     }
     const btnZoomOut = document.getElementById('btn-zoom-out');
     if (btnZoomOut) {
       btnZoomOut.onclick = () => {
-        this.cameraZoom = Math.min(80, this.cameraZoom + 8);
+        this.cameraZoom = Math.min(68, this.cameraZoom + 3);
         this.updateCameraTransform();
       };
     }
@@ -895,19 +1042,27 @@ export class Game {
 
     // 網格方向微調鍵與旋轉鍵
     const btnMoveUp = document.getElementById('btn-move-up');
-    if (btnMoveUp) btnMoveUp.onclick = () => { this.store.moveSelectedObject(0, -0.6); sounds.playClick(); };
+    if (btnMoveUp) btnMoveUp.onclick = () => this.nudgeSelectedObject(0, -0.6);
 
     const btnMoveDown = document.getElementById('btn-move-down');
-    if (btnMoveDown) btnMoveDown.onclick = () => { this.store.moveSelectedObject(0, 0.6); sounds.playClick(); };
+    if (btnMoveDown) btnMoveDown.onclick = () => this.nudgeSelectedObject(0, 0.6);
 
     const btnMoveLeft = document.getElementById('btn-move-left');
-    if (btnMoveLeft) btnMoveLeft.onclick = () => { this.store.moveSelectedObject(-0.6, 0); sounds.playClick(); };
+    if (btnMoveLeft) btnMoveLeft.onclick = () => this.nudgeSelectedObject(-0.6, 0);
 
     const btnMoveRight = document.getElementById('btn-move-right');
-    if (btnMoveRight) btnMoveRight.onclick = () => { this.store.moveSelectedObject(0.6, 0); sounds.playClick(); };
+    if (btnMoveRight) btnMoveRight.onclick = () => this.nudgeSelectedObject(0.6, 0);
 
     const btnRotateObj = document.getElementById('btn-rotate-obj');
-    if (btnRotateObj) btnRotateObj.onclick = () => { this.store.rotateSelectedObject(Math.PI / 2); sounds.playClick(); };
+    if (btnRotateObj) btnRotateObj.onclick = () => {
+      const result = this.store.rotateSelectedObject(Math.PI / 2);
+      if (result?.valid === false) {
+        this.showTopBanner('⚠️ 這個方向會和其它佈置重疊，請先移到空位。');
+        sounds.playDisappointed();
+        return;
+      }
+      sounds.playClick();
+    };
 
     // 貨架販售商品自由切換 (御飯糰、綠茶、洋芋片、泡麵、咖啡、關東煮)
     document.querySelectorAll('.btn-chip').forEach(btn => {
@@ -968,10 +1123,22 @@ export class Game {
     }
   }
 
+  nudgeSelectedObject(dx, dz) {
+    const result = this.store.moveSelectedObject(dx, dz);
+    if (result?.valid === false) {
+      this.showTopBanner('⚠️ 這個位置會和牆面或其它佈置重疊。');
+      sounds.playDisappointed();
+      return result;
+    }
+    sounds.playClick();
+    return result;
+  }
+
   // 開啟 / 關閉自由裝潢擺設模式
   toggleDecorMode(enabled) {
     this.isDecorMode = enabled;
     this.store.setDecorMode(enabled);
+    document.body.classList.toggle('decor-mode-active', enabled);
 
     const decorPanel = document.getElementById('decor-hud-panel');
     const bottomNav = document.querySelector('.bottom-actions-container');
@@ -1060,11 +1227,19 @@ export class Game {
         let newId = null;
         if (item.isShelf) {
           newId = this.store.addNewShelf(item.type, item.defaultItem);
-          this.store.selectObject(newId, 'shelf');
         } else {
           newId = this.store.addNewDecoration(item.type);
-          this.store.selectObject(newId, 'decor');
         }
+
+        if (!newId) {
+          this.money += item.price;
+          sounds.playDisappointed();
+          this.showTopBanner('⚠️ 店內沒有不重疊的可放置空間，已退回金幣。');
+          this.updateHUD();
+          return;
+        }
+
+        this.store.selectObject(newId, item.isShelf ? 'shelf' : 'decor');
 
         try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } }); } catch {}
         this.showTopBanner(`🎉 成功購買【${item.name}】並已放置於店內！您可以用滑鼠點選自由移動它的位置！`);
@@ -1160,4 +1335,3 @@ export class Game {
     });
   }
 }
-

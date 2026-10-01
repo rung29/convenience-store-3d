@@ -8,6 +8,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // 1. 預先載入 3D 骨架動作模型 (Xbot.glb)
   await modelManager.preloadModels();
+  await modelManager.preloadStoreAssets();
 
   // 2. 初始化橘子便利商店 3D 經營遊戲實例
   const game = new Game(container);
