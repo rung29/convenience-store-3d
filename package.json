@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "verify:pages": "node scripts/verify-pages-build.mjs",
     "verify:test-characters": "node scripts/verify-test-characters.mjs",
-    "verify:scene-layout": "node scripts/verify-scene-layout.mjs"
+    "verify:scene-layout": "node scripts/verify-scene-layout.mjs",
+    "verify:mobile-layout": "node scripts/verify-mobile-layout.mjs"
   },
   "devDependencies": {
     "vite": "^8.3.0"

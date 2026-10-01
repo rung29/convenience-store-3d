@@ -963,6 +963,38 @@ export class Game {
       };
     }
 
+    const mobileStatusToggle = document.getElementById('btn-toggle-mobile-status');
+    if (mobileStatusToggle) {
+      mobileStatusToggle.onclick = () => {
+        const open = !document.body.classList.contains('mobile-status-open');
+        document.body.classList.toggle('mobile-status-open', open);
+        mobileStatusToggle.setAttribute('aria-expanded', String(open));
+        if (open) {
+          document.body.classList.remove('mobile-actions-open');
+          document.getElementById('btn-toggle-mobile-actions')?.setAttribute('aria-expanded', 'false');
+        }
+      };
+    }
+
+    const mobileActionsToggle = document.getElementById('btn-toggle-mobile-actions');
+    if (mobileActionsToggle) {
+      mobileActionsToggle.onclick = () => {
+        const open = !document.body.classList.contains('mobile-actions-open');
+        document.body.classList.toggle('mobile-actions-open', open);
+        mobileActionsToggle.setAttribute('aria-expanded', String(open));
+        if (open) {
+          document.body.classList.remove('mobile-status-open');
+          document.getElementById('btn-toggle-mobile-status')?.setAttribute('aria-expanded', 'false');
+        }
+      };
+    }
+    document.querySelectorAll('.bottom-actions-container .btn-big-action').forEach(button => {
+      button.addEventListener('click', () => {
+        document.body.classList.remove('mobile-actions-open');
+        mobileActionsToggle?.setAttribute('aria-expanded', 'false');
+      });
+    });
+
     // 領取任務按鈕
     const qBtn = document.getElementById('quest-claim-btn');
     if (qBtn) {
@@ -1139,6 +1171,9 @@ export class Game {
     this.isDecorMode = enabled;
     this.store.setDecorMode(enabled);
     document.body.classList.toggle('decor-mode-active', enabled);
+    document.body.classList.remove('mobile-actions-open', 'mobile-status-open');
+    document.getElementById('btn-toggle-mobile-actions')?.setAttribute('aria-expanded', 'false');
+    document.getElementById('btn-toggle-mobile-status')?.setAttribute('aria-expanded', 'false');
 
     const decorPanel = document.getElementById('decor-hud-panel');
     const bottomNav = document.querySelector('.bottom-actions-container');
