@@ -3,14 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6ede2" />
     <title>橘子便利商店 3D (Gamania Mart 3D) - 經典模擬經營</title>
     <meta name="description" content="致敬遊戲橘子經典《便利商店》！純滑鼠微縮模型風格 3D 模擬經營遊戲：進貨、定價、一鍵補貨、行銷宣傳、抓小偷與當日結算。" />
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
     <!-- 3D 微縮場景畫布容器 -->
-    <div id="canvas-container"></div>
+    <main id="canvas-container" aria-label="橘子超商 3D 店面遊戲場景"></main>
 
     <!-- 頂部即時營運 HUD (參考圖可愛圓角卡片風格) -->
     <header class="top-hud-container">
@@ -66,7 +67,7 @@
     </header>
 
     <!-- 頂部置中提示橫幅 (如參考圖「目標完成！+80 金幣」) -->
-    <div class="top-center-banner" id="top-center-banner">
+    <div class="top-center-banner" id="top-center-banner" role="status" aria-live="polite">
       <!-- 動態插入提示文字 -->
     </div>
 

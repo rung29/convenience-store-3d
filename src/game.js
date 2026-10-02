@@ -54,8 +54,11 @@ export class Game {
 
     // 滑鼠正交相機視角控制：預設把店內主場景放大，讓商品與陳列細節成為畫面主角。
     // 保留完整地圖，但用更近的正交鏡頭讓店舖、貨架與角色同步放大。
-    // Keep the whole expanded plaza in frame; the layout, not a close crop, carries the detail.
-    this.cameraZoom = window.innerWidth < 720 ? 28 : 22;
+    // Keep the whole expanded plaza in frame while reserving enough detail for
+    // portrait phones and short landscape windows.
+    const viewport = this.getViewportSize();
+    const shortestSide = Math.min(viewport.width, viewport.height);
+    this.cameraZoom = shortestSide < 560 ? 28 : shortestSide < 820 ? 24 : 22;
     this.cameraPan = new THREE.Vector3(0, 0, 0);
 
     // 初始化場景與微縮店鋪
@@ -81,13 +84,46 @@ export class Game {
     }, 800);
   }
 
+  getViewportSize() {
+    const rect = this.container?.getBoundingClientRect?.();
+    const visualViewport = window.visualViewport;
+    return {
+      width: Math.max(1, Math.round(rect?.width || visualViewport?.width || window.innerWidth || 1)),
+      height: Math.max(1, Math.round(rect?.height || visualViewport?.height || window.innerHeight || 1))
+    };
+  }
+
+  getRenderPixelRatio(width) {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    // Keep phones responsive without making desktop shadows visibly soft.
+    return Math.min(devicePixelRatio, width < 760 ? 1.5 : 2);
+  }
+
+  resizeViewport() {
+    if (!this.camera || !this.renderer) return;
+
+    const { width, height } = this.getViewportSize();
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+    const aspect = width / height;
+    const zoom = this.cameraZoom;
+    this.camera.left = -zoom * aspect;
+    this.camera.right = zoom * aspect;
+    this.camera.top = zoom;
+    this.camera.bottom = -zoom;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setPixelRatio(this.getRenderPixelRatio(width));
+    this.renderer.setSize(width, height, false);
+  }
+
   // 正交微縮相機
   initIsometricScene() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xf6ede2); // 溫暖米粉白
     this.scene.fog = new THREE.Fog(0xf6ede2, 42, 86);
 
-    const aspect = window.innerWidth / window.innerHeight;
+    const { width, height } = this.getViewportSize();
+    const aspect = width / height;
     const d = this.cameraZoom;
 
     this.camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
@@ -95,57 +131,120 @@ export class Game {
     this.camera.lookAt(0, 1.0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.12;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
+    this.resizeViewport();
 
-    window.addEventListener('resize', () => {
-      const asp = window.innerWidth / window.innerHeight;
-      const zoom = this.cameraZoom;
-      this.camera.left = -zoom * asp;
-      this.camera.right = zoom * asp;
-      this.camera.top = zoom;
-      this.camera.bottom = -zoom;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    });
+    const scheduleResize = () => {
+      if (this.resizeFrame) cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = requestAnimationFrame(() => {
+        this.resizeFrame = null;
+        this.resizeViewport();
+      });
+    };
+    window.addEventListener('resize', scheduleResize, { passive: true });
+    window.addEventListener('orientationchange', scheduleResize, { passive: true });
+    window.visualViewport?.addEventListener('resize', scheduleResize, { passive: true });
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(scheduleResize);
+      this.resizeObserver.observe(this.container);
+    }
   }
 
-  // 純滑鼠操作
+  // Pointer controls work with mouse, pen, and touch. This keeps the same
+  // drag-to-pan and drag-to-place interaction on desktop and mobile.
   setupMouseControls() {
     let isCameraDragging = false;
     let isObjectDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    let prevPointerX = 0;
+    let prevPointerY = 0;
     let dragDist = 0;
+    let pinchStartDistance = 0;
+    let pinchStartZoom = this.cameraZoom;
+    const activePointers = new Map();
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this.planeIntersectPoint = new THREE.Vector3();
 
-    this.container.addEventListener('mousedown', e => {
-      sounds.init();
-      dragDist = 0;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
-
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    const updateRayFromPointer = (event) => {
+      const rect = this.container.getBoundingClientRect();
+      const width = Math.max(rect.width, 1);
+      const height = Math.max(rect.height, 1);
+      this.mouse.x = ((event.clientX - rect.left) / width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / height) * 2 + 1;
       this.raycaster.setFromCamera(this.mouse, this.camera);
+    };
 
-      // 如果在裝潢擺設模式下
+    const pointerDistance = () => {
+      const [first, second] = [...activePointers.values()];
+      if (!first || !second) return 0;
+      return Math.hypot(second.x - first.x, second.y - first.y);
+    };
+
+    const panCamera = (dx, dy) => {
+      const panFactor = 0.05 * (this.cameraZoom / 45);
+      const right = new THREE.Vector3(1, 0, -1).normalize();
+      const up = new THREE.Vector3(-1, 0, -1).normalize();
+      this.cameraPan.addScaledVector(right, -dx * panFactor);
+      this.cameraPan.addScaledVector(up, dy * panFactor);
+      this.updateCameraTransform();
+    };
+
+    const finishObjectPlacement = () => {
+      isObjectDragging = false;
+      const placed = this.store.applyGhostPlacement();
+      if (placed) {
+        sounds.playRestockSound();
+        this.showTopBanner('📍 擺設位置已更新！顧客尋路動線已自動重新計算！');
+        this.updateHUD();
+      } else {
+        sounds.playDisappointed();
+        this.showTopBanner('❌ 該位置會阻礙顧客出入口或收銀台走道，已恢復原位！');
+      }
+    };
+
+    const resetPointerState = (event, { activateClick = true } = {}) => {
+      if (isObjectDragging && this.isDecorMode) {
+        finishObjectPlacement();
+      } else {
+        const wasCameraDragging = isCameraDragging;
+        isCameraDragging = false;
+        if (activateClick && wasCameraDragging && dragDist < 8) {
+          this.handleSceneClick(event);
+        }
+      }
+      activePointers.clear();
+    };
+
+    this.container.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      sounds.init();
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      dragDist = 0;
+
+      if (activePointers.size > 1) {
+        isCameraDragging = false;
+        isObjectDragging = false;
+        pinchStartDistance = pointerDistance();
+        pinchStartZoom = this.cameraZoom;
+        return;
+      }
+
+      prevPointerX = event.clientX;
+      prevPointerY = event.clientY;
+      updateRayFromPointer(event);
+
       if (this.isDecorMode) {
         const hits = this.raycaster.intersectObjects(this.scene.children, true);
         let hitObj = null;
 
-        for (let hit of hits) {
+        for (const hit of hits) {
           let obj = hit.object;
           while (obj && !obj.userData?.isShelf && !obj.userData?.isDecor && obj.parent) {
             obj = obj.parent;
@@ -157,7 +256,6 @@ export class Game {
         }
 
         if (hitObj) {
-          // 點中貨架或裝飾品：立即選中並啟動拖曳與全息虛影預覽！
           isObjectDragging = true;
           isCameraDragging = false;
           if (hitObj.userData.isShelf) {
@@ -166,36 +264,50 @@ export class Game {
             this.selectDecorItem(hitObj.userData.decorId, 'decor');
           }
           this.store.createGhostPreview();
-          return;
-        } else if (this.store.selectedObject) {
-          // 點擊地面：若已選中物件，也可啟動虛影拖曳
-          if (this.raycaster.ray.intersectPlane(this.floorPlane, this.planeIntersectPoint)) {
-            isObjectDragging = true;
-            isCameraDragging = false;
-            this.store.createGhostPreview();
-            this.store.updateGhostPosition(this.planeIntersectPoint);
-            return;
-          }
+        } else if (this.store.selectedObject
+          && this.raycaster.ray.intersectPlane(this.floorPlane, this.planeIntersectPoint)) {
+          isObjectDragging = true;
+          isCameraDragging = false;
+          this.store.createGhostPreview();
+          this.store.updateGhostPosition(this.planeIntersectPoint);
         }
       }
 
-      // 正常模式或點擊空白區域：啟動相機平移
-      isCameraDragging = true;
-      isObjectDragging = false;
+      if (!isObjectDragging) {
+        isCameraDragging = true;
+      }
+
+      try {
+        this.container.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Pointer capture is optional on embedded or older browsers.
+      }
     });
 
-    window.addEventListener('mousemove', e => {
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      this.raycaster.setFromCamera(this.mouse, this.camera);
+    this.container.addEventListener('pointermove', event => {
+      if (!activePointers.has(event.pointerId)) return;
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
-      const dx = e.clientX - prevMouseX;
-      const dy = e.clientY - prevMouseY;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      if (activePointers.size > 1) {
+        const distance = pointerDistance();
+        if (pinchStartDistance > 0 && distance > 0) {
+          this.cameraZoom = THREE.MathUtils.clamp(
+            pinchStartZoom - (distance - pinchStartDistance) * 0.05,
+            12,
+            68
+          );
+          this.updateCameraTransform();
+        }
+        return;
+      }
+
+      updateRayFromPointer(event);
+      const dx = event.clientX - prevPointerX;
+      const dy = event.clientY - prevPointerY;
+      prevPointerX = event.clientX;
+      prevPointerY = event.clientY;
       dragDist += Math.abs(dx) + Math.abs(dy);
 
-      // 1. 若正在滑鼠拖曳擺設物件
       if (isObjectDragging && this.isDecorMode) {
         if (this.raycaster.ray.intersectPlane(this.floorPlane, this.planeIntersectPoint)) {
           this.store.updateGhostPosition(this.planeIntersectPoint);
@@ -203,50 +315,48 @@ export class Game {
         return;
       }
 
-      // 2. 若正在相機平移
       if (isCameraDragging) {
-        const panFactor = 0.05 * (this.cameraZoom / 45);
-        const right = new THREE.Vector3(1, 0, -1).normalize();
-        const up = new THREE.Vector3(-1, 0, -1).normalize();
-
-        this.cameraPan.addScaledVector(right, -dx * panFactor);
-        this.cameraPan.addScaledVector(up, dy * panFactor);
-        this.updateCameraTransform();
+        panCamera(dx, dy);
       }
     });
 
-    window.addEventListener('mouseup', e => {
-      if (isObjectDragging && this.isDecorMode) {
-        isObjectDragging = false;
-        // 將擺設物件定位到透化虛影預覽的位置
-        const placed = this.store.applyGhostPlacement();
-        if (placed) {
-          sounds.playRestockSound();
-          this.showTopBanner('📍 擺設位置已更新！顧客尋路動線已自動重新計算！');
-          this.updateHUD();
-        } else {
-          sounds.playDisappointed();
-          this.showTopBanner('❌ 該位置會阻礙顧客出入口或收銀台走道，已恢復原位！');
-        }
+    const endPointer = (event, cancelled = false) => {
+      activePointers.delete(event.pointerId);
+      if (activePointers.size > 0) {
+        const remaining = [...activePointers.values()][0];
+        prevPointerX = remaining.x;
+        prevPointerY = remaining.y;
+        pinchStartDistance = 0;
+        dragDist = 8;
+        isCameraDragging = !isObjectDragging;
         return;
       }
 
-      isCameraDragging = false;
-      if (dragDist < 8) {
-        this.handleSceneClick(e);
+      try {
+        this.container.releasePointerCapture?.(event.pointerId);
+      } catch {
+        // Pointer capture is optional on embedded or older browsers.
       }
-    });
+      resetPointerState(event, { activateClick: !cancelled });
+    };
 
-    this.container.addEventListener('wheel', e => {
-      e.preventDefault();
-      this.cameraZoom += e.deltaY * 0.03;
-      this.cameraZoom = Math.max(12, Math.min(68, this.cameraZoom));
+    this.container.addEventListener('pointerup', event => endPointer(event));
+    this.container.addEventListener('pointercancel', event => endPointer(event, true));
+    this.container.addEventListener('lostpointercapture', event => {
+      if (activePointers.has(event.pointerId)) endPointer(event, true);
+    });
+    this.container.addEventListener('contextmenu', event => event.preventDefault());
+
+    this.container.addEventListener('wheel', event => {
+      event.preventDefault();
+      this.cameraZoom = THREE.MathUtils.clamp(this.cameraZoom + event.deltaY * 0.03, 12, 68);
       this.updateCameraTransform();
     }, { passive: false });
   }
 
   updateCameraTransform() {
-    const aspect = window.innerWidth / window.innerHeight;
+    const { width, height } = this.getViewportSize();
+    const aspect = width / height;
     const d = this.cameraZoom;
     this.camera.left = -d * aspect;
     this.camera.right = d * aspect;
@@ -260,8 +370,11 @@ export class Game {
 
   // 滑鼠點擊 3D 物件 (點紙箱補貨、點貨架管理、點顧客互動、點小偷抓小偷、裝潢點選)
   handleSceneClick(e) {
-    this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    const rect = this.container.getBoundingClientRect();
+    const width = Math.max(rect.width, 1);
+    const height = Math.max(rect.height, 1);
+    this.mouse.x = ((e.clientX - rect.left) / width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);

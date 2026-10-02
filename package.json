@@ -10,7 +10,10 @@
     "verify:pages": "node scripts/verify-pages-build.mjs",
     "verify:test-characters": "node scripts/verify-test-characters.mjs",
     "verify:scene-layout": "node scripts/verify-scene-layout.mjs",
-    "verify:mobile-layout": "node scripts/verify-mobile-layout.mjs"
+    "verify:mobile-layout": "node scripts/verify-mobile-layout.mjs",
+    "verify:game-interactions": "node scripts/verify-game-interactions.mjs",
+    "verify:placement": "node scripts/verify-placement.mjs",
+    "verify:all": "npm run build && npm run verify:mobile-layout && npm run verify:scene-layout && npm run verify:test-characters && npm run verify:pages && npm run verify:game-interactions && npm run verify:placement"
   },
   "devDependencies": {
     "vite": "^8.3.0"
