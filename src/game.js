@@ -23,6 +23,8 @@ export class Game {
     this.characterSet = CHARACTER_SET_IDS.MODERN;
     this.testCharactersEnabled = false;
     this.isDecorMode = false; // 是否在自由裝潢佈置模式
+    this.decorPanelCollapsed = false;
+    this.clerkHintDismissed = false;
 
     // 當日營運統計
     this.dayStats = {
@@ -1175,6 +1177,16 @@ export class Game {
       btnExitDecor.onclick = () => this.toggleDecorMode(false);
     }
 
+    const btnCollapseDecor = document.getElementById('btn-collapse-decor');
+    if (btnCollapseDecor) {
+      btnCollapseDecor.onclick = () => this.toggleDecorPanelCollapsed();
+    }
+
+    const btnDismissClerkBubble = document.getElementById('btn-dismiss-clerk-bubble');
+    if (btnDismissClerkBubble) {
+      btnDismissClerkBubble.onclick = () => this.dismissClerkHint();
+    }
+
     const btnOpenDecorShop = document.getElementById('btn-open-decor-shop');
     if (btnOpenDecorShop) {
       btnOpenDecorShop.onclick = () => this.openDecorShopModal();
@@ -1280,23 +1292,49 @@ export class Game {
   }
 
   // 開啟 / 關閉自由裝潢擺設模式
+  toggleDecorPanelCollapsed(collapsed = !this.decorPanelCollapsed) {
+    this.decorPanelCollapsed = Boolean(collapsed);
+    document.body.classList.toggle('decor-panel-collapsed', this.decorPanelCollapsed);
+
+    const button = document.getElementById('btn-collapse-decor');
+    if (!button) return;
+    button.setAttribute('aria-expanded', String(!this.decorPanelCollapsed));
+    button.setAttribute(
+      'aria-label',
+      this.decorPanelCollapsed ? '展開擺設設定' : '收合擺設設定',
+    );
+    button.setAttribute(
+      'title',
+      this.decorPanelCollapsed ? '展開擺設設定' : '收合擺設設定',
+    );
+    button.textContent = this.decorPanelCollapsed ? '+' : '⌄';
+  }
+
+  dismissClerkHint() {
+    this.clerkHintDismissed = true;
+    this.updateClerkHintVisibility();
+  }
+
+  updateClerkHintVisibility() {
+    const bubble = document.getElementById('clerk-bubble');
+    if (!bubble) return;
+    const visible = !this.clerkHintDismissed && !this.isDecorMode;
+    bubble.classList.toggle('is-dismissed', !visible);
+    bubble.setAttribute('aria-hidden', String(!visible));
+  }
+
   toggleDecorMode(enabled) {
-    this.isDecorMode = enabled;
-    this.store.setDecorMode(enabled);
-    document.body.classList.toggle('decor-mode-active', enabled);
+    this.isDecorMode = Boolean(enabled);
+    this.store.setDecorMode(this.isDecorMode);
+    document.body.classList.toggle('decor-mode-active', this.isDecorMode);
     document.body.classList.remove('mobile-actions-open', 'mobile-status-open');
     document.getElementById('btn-toggle-mobile-actions')?.setAttribute('aria-expanded', 'false');
     document.getElementById('btn-toggle-mobile-status')?.setAttribute('aria-expanded', 'false');
 
-    const decorPanel = document.getElementById('decor-hud-panel');
-    const bottomNav = document.querySelector('.bottom-actions-container');
-    const clerkBubble = document.getElementById('clerk-bubble');
+    this.toggleDecorPanelCollapsed(false);
+    this.updateClerkHintVisibility();
 
-    if (decorPanel) decorPanel.style.display = enabled ? 'flex' : 'none';
-    if (bottomNav) bottomNav.style.display = enabled ? 'none' : 'flex';
-    if (clerkBubble) clerkBubble.style.display = enabled ? 'none' : 'flex';
-
-    if (enabled) {
+    if (this.isDecorMode) {
       sounds.playMarketing();
       this.showTopBanner('🎨 已進入自由裝潢擺設模式！點選店內貨架或擺飾即可自由調整位置、旋轉與更換商品！');
     } else {

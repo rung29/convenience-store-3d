@@ -126,7 +126,7 @@
     <button class="mobile-ui-toggle mobile-actions-toggle" id="btn-toggle-mobile-actions" type="button" aria-expanded="false" aria-label="開啟遊戲操作" title="開啟遊戲操作">☰</button>
 
     <!-- 裝潢與自由擺設模式控制面板 (Decor Floating Controller) -->
-    <div class="decor-hud-panel" id="decor-hud-panel" style="display: none;">
+    <div class="decor-hud-panel" id="decor-hud-panel">
       <div class="decor-hud-header">
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:24px;">🎨</span>
@@ -136,12 +136,14 @@
           </div>
         </div>
         <div style="display:flex; gap:8px;">
+          <button class="btn-decor-collapse" id="btn-collapse-decor" type="button" aria-expanded="true" aria-label="收合擺設設定" title="收合擺設設定">⌄</button>
           <button class="btn-decor-shop" id="btn-open-decor-shop">🏬 裝潢商城</button>
           <button class="btn-decor-exit" id="btn-exit-decor">✅ 完成佈置</button>
         </div>
       </div>
 
       <!-- 選中物件時展開的操作工具列 -->
+      <div class="decor-hud-content">
       <div class="decor-selection-box" id="decor-selection-box" style="display: none;">
         <div class="selection-info-bar">
           <span class="selected-name" id="selected-obj-name">日式極品綠茶冷藏櫃</span>
@@ -205,6 +207,7 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- 左下角親切店員提示氣泡 -->
@@ -214,6 +217,7 @@
         <span class="bubble-title">店長小提醒：自由裝潢與商品擺設</span>
         <span class="bubble-subtitle">點擊「裝潢擺設」即可自由排列貨架位置、旋轉並更換商品！</span>
       </div>
+      <button class="bubble-dismiss" id="btn-dismiss-clerk-bubble" type="button" aria-label="關閉店長提示" title="關閉店長提示">×</button>
     </div>
 
     <!-- 右下角縮放按鈕 -->
