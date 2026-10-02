@@ -30,6 +30,7 @@ export const STORE_ASSET_MANIFEST = Object.freeze({
   flowerBucket: 'models/store/flower-bucket.glb',
   promoPallet: 'models/store/promo-pallet.glb',
   impulseShelf: 'models/store/impulse-shelf.glb',
+  odenHotFoodCounter: 'models/store/oden-hot-food-counter.glb',
   deliveryLorry: 'models/store/delivery-lorry.glb',
   testRobot: 'models/RobotExpressive.glb',
   testSoldier: 'models/Soldier.glb',

@@ -51,6 +51,38 @@ const ROOM_PLACEMENT_BOUNDS = Object.freeze({
   maxZ: 6.8
 });
 const PLACEMENT_PREVIEW_PADDING = 0.08;
+export const PRODUCT_DISPLAY_EQUIPMENT = Object.freeze({
+  green_tea: Object.freeze({
+    assetKey: 'chillerDrinks',
+    equipmentName: '飲料冷藏櫃',
+    scale: 1.04
+  }),
+  canned_coffee: Object.freeze({
+    assetKey: 'chillerDairy',
+    equipmentName: '咖啡冷藏櫃',
+    scale: 1.04
+  }),
+  onigiri: Object.freeze({
+    assetKey: 'gondolaBottles',
+    equipmentName: '鮮食展示櫃',
+    scale: 1
+  }),
+  chips: Object.freeze({
+    assetKey: 'gondolaSnacks',
+    equipmentName: '零食貨架',
+    scale: 1
+  }),
+  instant_noodles: Object.freeze({
+    assetKey: 'gondolaTins',
+    equipmentName: '乾貨貨架',
+    scale: 1
+  }),
+  oden: Object.freeze({
+    assetKey: 'odenHotFoodCounter',
+    equipmentName: '關東煮熱食台',
+    scale: 1
+  })
+});
 export const MARKET_SCENE_LAYOUT = Object.freeze({
   interiorScale: 1.25,
   sidewalkCenter: 10.35,
@@ -74,6 +106,8 @@ const DECOR_PLACEMENT_FOOTPRINTS = Object.freeze({
   flower_1: { width: 0.9, depth: 0.9 },
   promo_pallet_1: { width: 2.0, depth: 1.2 },
   impulse_1: { width: 1.0, depth: 0.9 },
+  freezer_chest_1: { width: 1.9, depth: 1.0 },
+  upright_freezer_1: { width: 1.2, depth: 0.95 },
   table: { width: 2.4, depth: 1.0 },
   plant: { width: 1.0, depth: 1.0 },
   vending: { width: 1.4, depth: 1.05 },
@@ -839,12 +873,13 @@ export class Store3D {
       id: 'snack_shelf_2',
       name: '超人氣速食泡麵架',
       itemId: 'instant_noodles',
+      assetKey: 'gondolaTins',
       category: '速食泡麵',
       capacity: 12,
       currentCount: 8,
       pos: new THREE.Vector3(1.5, 0, 1.2),
       rotY: 0,
-      w: 2.4, h: 1.4, d: 0.8,
+      w: 2.0, h: 2.05, d: 0.95,
       color: '#ef4444',
       approachPos: new THREE.Vector3(1.5, 0, 2.4)
     });
@@ -859,7 +894,7 @@ export class Store3D {
       currentCount: 6,
       pos: new THREE.Vector3(-3.2, 0, -4.6),
       rotY: 0,
-      w: 1.8, h: 1.1, d: 0.9,
+      w: 1.35, h: 1.4, d: 0.8,
       color: '#d97706',
       approachPos: new THREE.Vector3(-3.2, 0, -3.2)
     });
@@ -1051,7 +1086,10 @@ export class Store3D {
     shelfGroup.position.copy(config.pos);
     shelfGroup.rotation.y = config.rotY;
 
-    const scale = assetKey.includes('chiller') || assetKey.includes('freezer') ? 1.04 : 1;
+    const displayEquipment = PRODUCT_DISPLAY_EQUIPMENT[config.itemId];
+    const scale = displayEquipment?.assetKey === assetKey
+      ? displayEquipment.scale
+      : (assetKey.includes('chiller') || assetKey.includes('freezer') ? 1.04 : 1);
     const visual = this.addImportedAssetToGroup(assetKey, shelfGroup, { scale });
     if (!visual) return false;
 
@@ -1087,6 +1125,34 @@ export class Store3D {
     this.shelves[config.id] = shelfData;
     this.interactiveShelves.push(body);
     this.refreshShelfItems(config.id);
+    return true;
+  }
+
+  replaceImportedShelfEquipment(shelf, itemId) {
+    const equipment = PRODUCT_DISPLAY_EQUIPMENT[itemId];
+    if (!shelf || !equipment || !modelManager.hasStoreAsset(equipment.assetKey)) return false;
+    if (shelf.importedAsset === equipment.assetKey && shelf.importedVisual) return true;
+
+    const nextVisual = this.addImportedAssetToGroup(equipment.assetKey, shelf.shelfGroup, {
+      scale: equipment.scale
+    });
+    if (!nextVisual) return false;
+
+    const interactionData = { isShelf: true, shelfId: shelf.id };
+    nextVisual.traverse(child => { child.userData = interactionData; });
+
+    const previousVisual = shelf.importedVisual;
+    if (previousVisual) {
+      shelf.shelfGroup.remove(previousVisual);
+      previousVisual.traverse(child => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => material.dispose());
+      });
+    }
+
+    shelf.importedAsset = equipment.assetKey;
+    shelf.importedVisual = nextVisual;
     return true;
   }
 
@@ -1143,14 +1209,7 @@ export class Store3D {
 
     const isFridge = config.category && config.category.includes('冷藏');
     const isOden = config.category && config.category.includes('關東煮');
-    const importedShelfAsset = {
-      green_tea: 'chillerDrinks',
-      canned_coffee: 'chillerDairy',
-      onigiri: 'gondolaBottles',
-      chips: 'gondolaSnacks',
-      instant_noodles: 'gondolaCereal',
-      oden: 'impulseShelf'
-    }[config.itemId];
+    const importedShelfAsset = PRODUCT_DISPLAY_EQUIPMENT[config.itemId]?.assetKey || config.assetKey;
     if (importedShelfAsset && modelManager.hasStoreAsset(importedShelfAsset)) {
       this.createImportedShelf(config, importedShelfAsset);
       return;
@@ -2822,7 +2881,9 @@ export class Store3D {
       { key: 'customerLockers', id: 'lockers_1', name: 'Customer lockers', position: new THREE.Vector3(5.35, 0, 5.5), rotation: new THREE.Euler(0, -Math.PI / 2, 0) },
       { key: 'flowerBucket', id: 'flower_1', name: 'Flower stand', position: new THREE.Vector3(4.45, 0, 5.55) },
       { key: 'promoPallet', id: 'promo_pallet_1', name: 'Promotional display', position: new THREE.Vector3(-2.25, 0, 4.85), scale: 0.9 },
-      { key: 'impulseShelf', id: 'impulse_1', name: 'Impulse shelf', position: new THREE.Vector3(2.65, 0, 5.65), rotation: new THREE.Euler(0, Math.PI, 0) }
+      { key: 'impulseShelf', id: 'impulse_1', name: 'Impulse shelf', position: new THREE.Vector3(2.65, 0, 5.65), rotation: new THREE.Euler(0, Math.PI, 0) },
+      { key: 'freezerChest', id: 'freezer_chest_1', name: 'Frozen food chest', position: new THREE.Vector3(-0.15, 0, 4.55), scale: 0.95 },
+      { key: 'uprightFreezer', id: 'upright_freezer_1', name: 'Upright freezer', position: new THREE.Vector3(1.65, 0, 4.55), scale: 0.95 }
     ];
 
     props.forEach(({ key, id, name, position, rotation, scale }) => {
@@ -2948,6 +3009,27 @@ export class Store3D {
       1.4,
       Math.PI / 2
     );
+    addProp(
+      'kenneyShelfEnd',
+      'kenney_shelf_end',
+      new THREE.Vector3(-8.25, 0, 9.55),
+      1.35,
+      Math.PI
+    );
+    addProp(
+      'kenneyFreezer',
+      'kenney_counter_freezer',
+      new THREE.Vector3(0.55, 0, 9.55),
+      2.2,
+      Math.PI
+    );
+    addProp(
+      'kenneyEmployee',
+      'kenney_market_employee',
+      new THREE.Vector3(8.35, 0, 9.55),
+      1.85,
+      Math.PI
+    );
   }
 
   buildKayKitStreetScenery() {
@@ -3031,6 +3113,9 @@ export class Store3D {
     // collection of unrelated landmarks.
     addStreetAsset('cityBuildingA', 'city_building_a', new THREE.Vector3(-8.6, 0, -13.05), 2.2, 0);
     addStreetAsset('cityBuildingB', 'city_building_b', new THREE.Vector3(8.6, 0, -13.05), 2.2, Math.PI);
+    addStreetAsset('cityBuildingC', 'city_building_c', new THREE.Vector3(0, 0, -14.35), 1.8, Math.PI);
+    addStreetAsset('cityBase', 'city_water_tower_base', new THREE.Vector3(-10.55, 0, -8.75), 2.4, 0);
+    addStreetAsset('cityWatertower', 'city_water_tower', new THREE.Vector3(-10.55, 0, -8.75), 2.2, 0);
 
     addStreetAsset('cityCarStationwagon', 'city_car_stationwagon', new THREE.Vector3(-5.9, 0.08, MARKET_SCENE_LAYOUT.outerRoadCenter), 2.45, Math.PI / 2);
     addStreetAsset('cityCarTaxi', 'city_car_taxi', new THREE.Vector3(5.75, 0.08, MARKET_SCENE_LAYOUT.outerRoadCenter), 2.45, -Math.PI / 2);
@@ -3494,9 +3579,16 @@ export class Store3D {
     const itemDef = ITEM_DEFINITIONS[newItemId];
     if (!shelf || !itemDef) return false;
 
+    const displayEquipment = PRODUCT_DISPLAY_EQUIPMENT[newItemId];
+    if (displayEquipment && !this.replaceImportedShelfEquipment(shelf, newItemId)) return false;
+
     shelf.itemId = newItemId;
-    shelf.name = `${itemDef.name}專屬展售架`;
+    shelf.config.itemId = newItemId;
+    shelf.name = displayEquipment
+      ? `${itemDef.name}｜${displayEquipment.equipmentName}`
+      : `${itemDef.name}專屬展售架`;
     shelf.category = itemDef.category;
+    shelf.config.category = itemDef.category;
     shelf.config.color = itemDef.color || '#3b82f6';
 
     // 變更頂部標牌色彩
@@ -3607,7 +3699,7 @@ export class Store3D {
       config.w = 2.2; config.h = 1.4; config.d = 1.0;
       config.capacity = 14;
     } else if (type === 'oden_bar') {
-      config.w = 1.8; config.h = 1.2; config.d = 1.0;
+      config.w = 1.35; config.h = 1.4; config.d = 0.8;
       config.capacity = 12;
     }
 
